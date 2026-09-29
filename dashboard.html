@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rider Dashboard — RidePool</title>
+  <meta name="description" content="Manage your rides, track savings, and view AI-matched commute options." />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar" id="rider-sidebar">
+    <div class="sidebar-header">
+      <a href="index.html" class="nav-logo">
+        <div class="logo-icon">🚗</div>
+        RidePool
+      </a>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Rider</div>
+      <a href="dashboard.html" class="nav-item active" id="nav-home">
+        <span class="nav-icon">🏠</span> Home
+      </a>
+      <a href="map.html" class="nav-item" id="nav-find">
+        <span class="nav-icon">🔍</span> Find a Ride
+        <span class="nav-badge">3</span>
+      </a>
+      <a href="#" class="nav-item" id="nav-my-trips" data-stub="my-trips">
+        <span class="nav-icon">📋</span> My Trips
+      </a>
+      <a href="map.html" class="nav-item" id="nav-map">
+        <span class="nav-icon">🗺️</span> Route Map
+      </a>
+      <a href="profile.html" class="nav-item" id="nav-profile">
+        <span class="nav-icon">👤</span> My Profile
+      </a>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Switch Role</div>
+      <a href="driver.html" class="nav-item" id="nav-switch-driver">
+        <span class="nav-icon">🚗</span> Driver Mode
+      </a>
+    </div>
+
+    <div class="sidebar-section" style="flex: 1;">
+      <div class="sidebar-label">Account</div>
+      <a href="#" class="nav-item" data-stub="settings">
+        <span class="nav-icon">⚙️</span> Settings
+      </a>
+      <a href="#" class="nav-item" data-stub="support">
+        <span class="nav-icon">💬</span> Support
+      </a>
+      <!-- FUTURE: Notifications, integrations panel -->
+    </div>
+
+    <div class="sidebar-user">
+      <div class="user-avatar" aria-label="User initials">AK</div>
+      <div class="user-info">
+        <div class="user-name">Arjun Kumar</div>
+        <div class="user-role">Rider · Trust 87</div>
+      </div>
+      <button class="btn btn-ghost btn-icon btn-sm" data-stub="logout" aria-label="Log out">↩</button>
+    </div>
+  </aside>
+
+  <!-- ── Main Content ── -->
+  <main class="main-content">
+    <div class="page-topbar">
+      <div>
+        <div class="page-title">Good morning, Arjun 👋</div>
+        <div class="page-subtitle">Monday, 29 Sep 2026</div>
+      </div>
+      <div class="page-topbar-actions">
+        <button class="btn btn-ghost btn-icon" data-stub="notifications" aria-label="Notifications">🔔</button>
+        <a href="map.html" class="btn btn-primary btn-sm" id="topbar-find-ride">+ Find Ride</a>
+      </div>
+    </div>
+
+    <div class="page-body">
+
+      <!-- Stats Row -->
+      <div class="stats-row" style="margin-bottom: var(--space-6);">
+        <div class="stat-card">
+          <div class="flex items-center justify-between">
+            <div class="stat-label">Monthly Savings</div>
+            <div class="stat-icon" style="background: var(--color-success-light);">💰</div>
+          </div>
+          <div class="stat-value">₹1,240</div>
+          <div class="stat-delta text-success">↑ ₹320 vs last month</div>
+        </div>
+        <div class="stat-card">
+          <div class="flex items-center justify-between">
+            <div class="stat-label">Rides This Month</div>
+            <div class="stat-icon" style="background: var(--color-primary-light);">🚗</div>
+          </div>
+          <div class="stat-value">18</div>
+          <div class="stat-delta text-primary">↑ 4 more than Sep</div>
+        </div>
+        <div class="stat-card">
+          <div class="flex items-center justify-between">
+            <div class="stat-label">Trust Score</div>
+            <div class="stat-icon" style="background: var(--color-warning-light);">🛡️</div>
+          </div>
+          <div class="stat-value">87<span style="font-size:14px;color:var(--color-muted)">/100</span></div>
+          <div class="stat-delta text-warning">ID verification pending</div>
+        </div>
+        <div class="stat-card">
+          <div class="flex items-center justify-between">
+            <div class="stat-label">CO₂ Saved</div>
+            <div class="stat-icon" style="background: var(--color-success-light);">🌱</div>
+          </div>
+          <div class="stat-value">34 kg</div>
+          <div class="stat-delta text-success">This month</div>
+        </div>
+      </div>
+
+      <div class="layout-two-col">
+
+        <!-- Left Column -->
+        <div class="flex flex-col gap-6">
+
+          <!-- Active Ride -->
+          <div class="card">
+            <div class="card-header">
+              <h4>Active Ride</h4>
+              <span class="badge badge-success badge-dot">In Progress</span>
+            </div>
+            <div class="card-body">
+              <div class="flex items-center gap-4">
+                <div class="match-avatar" style="width:48px;height:48px;border-radius:50%;background:var(--color-surface-2);display:flex;align-items:center;justify-content:center;font-size:22px;border:2px solid var(--color-border);">👨</div>
+                <div style="flex:1;">
+                  <div style="font-weight:600;">Rohit Sharma</div>
+                  <div style="font-size:13px;color:var(--color-muted);">Driver · Trust 94 · ⭐ 4.8</div>
+                  <div style="font-size:13px;color:var(--color-muted);margin-top:4px;">🚗 MH 02 AB 4521 · White Swift Dzire</div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-weight:700;font-size:18px;">₹120</div>
+                  <div style="font-size:12px;color:var(--color-muted);">your share</div>
+                </div>
+              </div>
+
+              <hr class="divider" />
+
+              <div class="route-line" style="flex-direction:row;align-items:center;gap:8px;flex-wrap:nowrap;">
+                <div>
+                  <div class="route-point"><div class="route-dot"></div><span>Andheri West, Mumbai</span></div>
+                  <div class="route-connector"></div>
+                  <div class="route-point"><div class="route-dot end"></div><span>BKC, Mumbai</span></div>
+                </div>
+                <div style="margin-left:auto;text-align:right;">
+                  <div style="font-size:13px;font-weight:600;">ETA 12 min</div>
+                  <div style="font-size:12px;color:var(--color-muted);">Departing 9:15 AM</div>
+                </div>
+              </div>
+
+              <div class="flex gap-2 mt-4">
+                <button class="btn btn-secondary btn-sm" data-stub="live-map" id="view-live-map">🗺 Live Map</button>
+                <button class="btn btn-ghost btn-sm" data-stub="contact-driver">💬 Message</button>
+                <button class="btn btn-danger btn-sm" style="margin-left:auto;" data-stub="sos" id="sos-btn">🚨 SOS</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- AI Matched Rides -->
+          <div class="card">
+            <div class="card-header">
+              <h4>AI Recommended Matches</h4>
+              <a href="map.html" class="btn btn-ghost btn-sm">View all →</a>
+            </div>
+            <div class="card-body flex flex-col gap-3">
+
+              <div class="match-card" id="match-1">
+                <div class="flex items-center gap-3">
+                  <div class="match-avatar">👩</div>
+                  <div style="flex:1;">
+                    <div class="match-name">Priya Menon</div>
+                    <div class="match-meta">Tomorrow · 9:00 AM · 2 seats left</div>
+                    <div class="flex gap-2 mt-2" style="align-items:center;">
+                      <span class="badge badge-success">94% match</span>
+                      <span class="badge badge-neutral">Overlap: 8.2 km</span>
+                    </div>
+                    <div class="match-score-bar mt-2">
+                      <div class="fill high" style="width:94%"></div>
+                    </div>
+                  </div>
+                  <div style="text-align:right;flex-shrink:0;">
+                    <div class="match-price">₹110</div>
+                    <div class="match-meta">per seat</div>
+                  </div>
+                </div>
+                <div class="match-actions">
+                  <button class="btn btn-success btn-sm" id="accept-match-1">✓ Request</button>
+                  <button class="btn btn-ghost btn-sm" id="view-match-1">View Route</button>
+                  <button class="btn btn-ghost btn-sm" style="margin-left:auto;" data-stub="dismiss-match">✕</button>
+                </div>
+              </div>
+
+              <div class="match-card" id="match-2">
+                <div class="flex items-center gap-3">
+                  <div class="match-avatar">👨</div>
+                  <div style="flex:1;">
+                    <div class="match-name">Dev Kapoor</div>
+                    <div class="match-meta">Tomorrow · 9:15 AM · 3 seats left</div>
+                    <div class="flex gap-2 mt-2" style="align-items:center;">
+                      <span class="badge badge-warning">78% match</span>
+                      <span class="badge badge-neutral">Overlap: 6.1 km</span>
+                    </div>
+                    <div class="match-score-bar mt-2">
+                      <div class="fill medium" style="width:78%"></div>
+                    </div>
+                  </div>
+                  <div style="text-align:right;flex-shrink:0;">
+                    <div class="match-price">₹95</div>
+                    <div class="match-meta">per seat</div>
+                  </div>
+                </div>
+                <div class="match-actions">
+                  <button class="btn btn-success btn-sm" id="accept-match-2">✓ Request</button>
+                  <button class="btn btn-ghost btn-sm" id="view-match-2">View Route</button>
+                  <button class="btn btn-ghost btn-sm" style="margin-left:auto;" data-stub="dismiss-match">✕</button>
+                </div>
+              </div>
+
+              <!-- FUTURE: Paginated match list, filter by time/price/trust -->
+
+            </div>
+          </div>
+
+          <!-- Recent Trips -->
+          <div class="card">
+            <div class="card-header">
+              <h4>Recent Trips</h4>
+              <button class="btn btn-ghost btn-sm" data-stub="export-trips">Export ↓</button>
+            </div>
+            <div class="table-wrapper">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Route</th>
+                    <th>Driver</th>
+                    <th>Cost</th>
+                    <th>Rating</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>28 Sep</td>
+                    <td>Andheri → BKC</td>
+                    <td><div class="user-cell"><div class="mini-avatar">RS</div>Rohit S.</div></td>
+                    <td>₹120</td>
+                    <td class="stars">★★★★★</td>
+                    <td><span class="badge badge-success">Completed</span></td>
+                  </tr>
+                  <tr>
+                    <td>27 Sep</td>
+                    <td>Andheri → Powai</td>
+                    <td><div class="user-cell"><div class="mini-avatar">PM</div>Priya M.</div></td>
+                    <td>₹90</td>
+                    <td class="stars">★★★★☆</td>
+                    <td><span class="badge badge-success">Completed</span></td>
+                  </tr>
+                  <tr>
+                    <td>26 Sep</td>
+                    <td>Andheri → BKC</td>
+                    <td><div class="user-cell"><div class="mini-avatar">DK</div>Dev K.</div></td>
+                    <td>₹95</td>
+                    <td class="stars">★★★★★</td>
+                    <td><span class="badge badge-success">Completed</span></td>
+                  </tr>
+                  <tr>
+                    <td>24 Sep</td>
+                    <td>Andheri → BKC</td>
+                    <td><div class="user-cell"><div class="mini-avatar">NS</div>Nidhi S.</div></td>
+                    <td>₹110</td>
+                    <td class="stars">★★★☆☆</td>
+                    <td><span class="badge badge-danger">Cancelled</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div><!-- /Left Column -->
+
+        <!-- Right Column -->
+        <div class="flex flex-col gap-6">
+
+          <!-- My Commute Route -->
+          <div class="card">
+            <div class="card-header">
+              <h4>My Commute</h4>
+              <button class="btn btn-ghost btn-sm" data-stub="edit-commute">Edit</button>
+            </div>
+            <div class="card-body flex flex-col gap-3">
+              <div class="form-group">
+                <label class="form-label">From</label>
+                <div class="input-group">
+                  <span class="input-icon">📍</span>
+                  <input class="form-input" type="text" value="Andheri West, Mumbai" id="rider-origin" />
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">To</label>
+                <div class="input-group">
+                  <span class="input-icon">🏁</span>
+                  <input class="form-input" type="text" value="BKC, Mumbai" id="rider-dest" />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Depart By</label>
+                  <input class="form-input" type="time" value="09:00" id="rider-depart-time" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Budget / Seat</label>
+                  <input class="form-input" type="number" value="150" min="0" id="rider-budget" />
+                </div>
+              </div>
+              <a href="map.html" class="btn btn-primary w-full" id="find-matches-btn">🔍 Find Matches</a>
+            </div>
+          </div>
+
+          <!-- Savings Tracker -->
+          <div class="card">
+            <div class="card-header">
+              <h4>Savings Tracker</h4>
+              <span class="badge badge-success">Oct 2026</span>
+            </div>
+            <div class="card-body">
+              <div class="earnings-row">
+                <span>Rides taken</span>
+                <span>18</span>
+              </div>
+              <div class="earnings-row">
+                <span>Amount paid</span>
+                <span>₹2,060</span>
+              </div>
+              <div class="earnings-row">
+                <span>Estimated solo cost</span>
+                <span>₹3,300</span>
+              </div>
+              <div class="earnings-row total">
+                <span>You saved</span>
+                <span class="credit">₹1,240</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Upcoming Schedule -->
+          <div class="card">
+            <div class="card-header">
+              <h4>Upcoming</h4>
+              <!-- FUTURE: Full calendar view -->
+            </div>
+            <div class="card-body flex flex-col gap-3">
+              <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--color-primary-light);border-radius:var(--radius-md);">
+                <div style="font-size:22px;">🗓️</div>
+                <div>
+                  <div style="font-weight:600;font-size:13px;">Tomorrow · 9:00 AM</div>
+                  <div style="font-size:12px;color:var(--color-muted);">Matched with Priya Menon · Pending confirmation</div>
+                </div>
+                <span class="badge badge-warning" style="margin-left:auto;flex-shrink:0;">Pending</span>
+              </div>
+
+              <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--color-surface-2);border-radius:var(--radius-md);">
+                <div style="font-size:22px;">🗓️</div>
+                <div>
+                  <div style="font-weight:600;font-size:13px;">01 Oct · 9:00 AM</div>
+                  <div style="font-size:12px;color:var(--color-muted);">Recurring — waiting for driver match</div>
+                </div>
+                <span class="badge badge-neutral" style="margin-left:auto;flex-shrink:0;">Searching</span>
+              </div>
+
+              <!-- FUTURE: Full weekly schedule, calendar widget -->
+            </div>
+          </div>
+
+        </div><!-- /Right Column -->
+
+      </div><!-- /layout-two-col -->
+    </div><!-- /page-body -->
+  </main>
+
+</div><!-- /app-shell -->
+
+<script src="js/app.js"></script>
+<script src="js/rides.js"></script>
+</body>
+</html>

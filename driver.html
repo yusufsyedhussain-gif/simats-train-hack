@@ -1,0 +1,1632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Driver Dashboard — RidePool</title>
+  <meta name="description" content="Post rides, manage passenger requests, track earnings and your verification status." />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <!-- Leaflet CSS for active ride map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    /* ── Autocomplete Dropdown ── */
+    .autocomplete-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-top: none;
+      border-radius: 0 0 var(--radius-md) var(--radius-md);
+      box-shadow: var(--shadow-md);
+      max-height: 220px;
+      overflow-y: auto;
+    }
+    .autocomplete-item {
+      padding: 10px 12px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--color-border);
+      transition: background 0.15s;
+    }
+    .autocomplete-item:last-child { border-bottom: none; }
+    .autocomplete-item:hover { background: var(--color-primary-light); }
+    .autocomplete-item.no-results {
+      color: var(--color-muted);
+      cursor: default;
+      font-size: 13px;
+      text-align: center;
+    }
+    .autocomplete-item.no-results:hover { background: transparent; }
+    .autocomplete-primary {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--color-text);
+    }
+    .autocomplete-secondary {
+      font-size: 11px;
+      color: var(--color-muted);
+      margin-top: 1px;
+    }
+
+    /* ── Post Success Overlay ── */
+    .post-success-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s, visibility 0.3s;
+    }
+    .post-success-overlay.open {
+      opacity: 1;
+      visibility: visible;
+    }
+    .post-success-modal {
+      background: var(--color-surface);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-lg);
+      width: 100%;
+      max-width: 420px;
+      margin: var(--space-4);
+      text-align: center;
+      padding: var(--space-8);
+      transform: scale(0.95);
+      transition: transform 0.3s;
+    }
+    .post-success-overlay.open .post-success-modal {
+      transform: scale(1);
+    }
+    .success-check {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: var(--color-success-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      margin: 0 auto 16px;
+    }
+
+    /* ── Request notification pulse ── */
+    @keyframes request-ping {
+      0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4); }
+      70% { box-shadow: 0 0 0 10px rgba(37, 99, 235, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+    }
+    .request-card.new-request {
+      animation: request-ping 1s ease-out;
+      border-color: var(--color-primary);
+    }
+
+    /* ── Passenger list in active ride ── */
+    .passenger-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: var(--color-surface-2);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--color-border);
+    }
+    .passenger-item .pax-avatar {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: var(--color-surface);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      border: 2px solid var(--color-border);
+      flex-shrink: 0;
+    }
+    .passenger-item .pax-info { flex: 1; }
+    .passenger-item .pax-name { font-weight: 600; font-size: 13px; }
+    .passenger-item .pax-sub { font-size: 12px; color: var(--color-muted); }
+
+    /* ── Active ride map ── */
+    #driver-map {
+      width: 100%;
+      height: 280px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--color-border);
+    }
+
+    /* ── Live stats bar ── */
+    .driver-live-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 1px;
+      background: var(--color-border);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      margin-bottom: var(--space-4);
+    }
+    .driver-live-stat {
+      background: var(--color-surface);
+      padding: 14px 8px;
+      text-align: center;
+    }
+    .driver-live-stat .dlv { font-size: 20px; font-weight: 700; color: var(--color-text); }
+    .driver-live-stat .dll { font-size: 10px; text-transform: uppercase; color: var(--color-muted); font-weight: 600; letter-spacing: 0.05em; }
+
+    /* ── Trip progress ── */
+    .trip-progress-bar {
+      height: 6px;
+      background: var(--color-border);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+      margin: 12px 0;
+    }
+    .trip-progress-fill {
+      height: 100%;
+      background: var(--color-primary);
+      border-radius: var(--radius-full);
+      transition: width 0.8s ease;
+    }
+
+    /* ── Trip summary ── */
+    .trip-summary-card {
+      text-align: center;
+      padding: var(--space-6);
+    }
+    .summary-icon {
+      width: 72px; height: 72px;
+      border-radius: 50%;
+      background: var(--color-success-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      margin: 0 auto 16px;
+    }
+
+    /* Star rating */
+    .star-rating {
+      display: flex; gap: 4px; justify-content: center;
+    }
+    .star-rating .star {
+      font-size: 28px; cursor: pointer;
+      color: var(--color-border-dark);
+      transition: color 0.15s, transform 0.15s;
+    }
+    .star-rating .star:hover,
+    .star-rating .star.hover { color: var(--color-warning); transform: scale(1.15); }
+    .star-rating .star.active { color: var(--color-warning); }
+
+    /* Pickup steps for driver */
+    .pickup-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .pickup-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      position: relative;
+      padding-bottom: 20px;
+    }
+    .pickup-step:last-child { padding-bottom: 0; }
+    .pickup-step::before {
+      content: '';
+      position: absolute;
+      left: 15px;
+      top: 28px;
+      bottom: 0;
+      width: 2px;
+      background: var(--color-border-dark);
+    }
+    .pickup-step:last-child::before { display: none; }
+    .pickup-step .step-dot {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: 2px solid var(--color-border-dark);
+      background: var(--color-surface);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+      z-index: 1;
+    }
+    .pickup-step.done .step-dot {
+      background: var(--color-success);
+      border-color: var(--color-success);
+      color: #fff;
+    }
+    .pickup-step.active-step .step-dot {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+      color: #fff;
+      animation: pulse-dot 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.3); }
+      50% { box-shadow: 0 0 0 6px rgba(37, 99, 235, 0); }
+    }
+    .pickup-step .step-content { flex: 1; }
+    .pickup-step .step-title { font-weight: 600; font-size: 13px; }
+    .pickup-step .step-meta { font-size: 12px; color: var(--color-muted); margin-top: 2px; }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar" id="driver-sidebar">
+    <div class="sidebar-header">
+      <a href="index.html" class="nav-logo">
+        <div class="logo-icon">🚗</div>
+        RidePool
+      </a>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Driver</div>
+      <button class="nav-item active" id="nav-post-ride" onclick="showTab('post-ride')">
+        <span class="nav-icon">➕</span> Post a Ride
+      </button>
+      <button class="nav-item" id="nav-requests" onclick="showTab('requests')">
+        <span class="nav-icon">📥</span> Requests
+        <span class="nav-badge" id="requests-badge">0</span>
+      </button>
+      <button class="nav-item" id="nav-active-ride" onclick="showTab('active-ride')">
+        <span class="nav-icon">🚦</span> Active Ride
+      </button>
+      <button class="nav-item" id="nav-earnings" onclick="showTab('earnings')">
+        <span class="nav-icon">💰</span> Earnings
+      </button>
+      <button class="nav-item" id="nav-schedule" onclick="showTab('schedule')">
+        <span class="nav-icon">🗓️</span> My Schedule
+      </button>
+      <button class="nav-item" id="nav-verification" onclick="showTab('verification')">
+        <span class="nav-icon">🛡️</span> Verification
+        <span class="nav-badge" style="background:var(--color-warning);">!</span>
+      </button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Switch Role</div>
+      <a href="dashboard.html" class="nav-item" id="nav-rider-mode">
+        <span class="nav-icon">👤</span> Rider Mode
+      </a>
+      <a href="profile.html" class="nav-item">
+        <span class="nav-icon">🪪</span> My Profile
+      </a>
+    </div>
+
+    <div class="sidebar-section" style="flex:1;">
+      <div class="sidebar-label">Account</div>
+      <a href="#" class="nav-item" data-stub="settings">
+        <span class="nav-icon">⚙️</span> Settings
+      </a>
+      <!-- FUTURE: Notifications, vehicle management, payout settings -->
+    </div>
+
+    <div class="sidebar-user">
+      <div class="user-avatar">RS</div>
+      <div class="user-info">
+        <div class="user-name">Rohit Sharma</div>
+        <div class="user-role">Driver · Trust 94</div>
+      </div>
+      <button class="btn btn-ghost btn-icon btn-sm" aria-label="Log out">↩</button>
+    </div>
+  </aside>
+
+  <!-- ── Main Content ── -->
+  <main class="main-content">
+    <div class="page-topbar">
+      <div>
+        <div class="page-title" id="driver-page-title">Post a Ride</div>
+        <div class="page-subtitle" id="driver-page-subtitle">Create a new ride offer for your commute</div>
+      </div>
+      <div class="page-topbar-actions">
+        <button class="btn btn-ghost btn-icon" data-stub="notifications" aria-label="Notifications">🔔</button>
+        <!-- Status indicator -->
+        <div class="flex items-center gap-2" style="font-size:13px;">
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--color-success);display:inline-block;"></span>
+          <span style="color:var(--color-muted);">Online</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-body">
+
+      <!-- ─── TAB: POST A RIDE ─── -->
+      <div id="tab-post-ride" class="tab-panel active">
+
+        <!-- Driver Stats Row -->
+        <div class="stats-row-3" style="margin-bottom:var(--space-6);">
+          <div class="stat-card">
+            <div class="flex items-center justify-between">
+              <div class="stat-label">Earnings This Month</div>
+              <div class="stat-icon" style="background: var(--color-success-light);">💰</div>
+            </div>
+            <div class="stat-value">₹4,820</div>
+            <div class="stat-delta text-success">After 12% commission</div>
+          </div>
+          <div class="stat-card">
+            <div class="flex items-center justify-between">
+              <div class="stat-label">Rides Given</div>
+              <div class="stat-icon" style="background: var(--color-primary-light);">🚗</div>
+            </div>
+            <div class="stat-value">23</div>
+            <div class="stat-delta text-primary">This month</div>
+          </div>
+          <div class="stat-card">
+            <div class="flex items-center justify-between">
+              <div class="stat-label">Driver Rating</div>
+              <div class="stat-icon" style="background: var(--color-warning-light);">⭐</div>
+            </div>
+            <div class="stat-value">4.8</div>
+            <div class="stat-delta text-warning">Based on 22 ratings</div>
+          </div>
+        </div>
+
+        <div class="layout-two-col">
+          <!-- Post Ride Form -->
+          <div class="card">
+            <div class="card-header">
+              <h4>Post a New Ride</h4>
+              <span class="badge badge-primary">Driver Offer</span>
+            </div>
+            <div class="card-body flex flex-col gap-4">
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="driver-origin">From <span class="required">*</span></label>
+                  <div class="input-group">
+                    <span class="input-icon">📍</span>
+                    <input class="form-input" type="text" id="driver-origin" placeholder="Type a location..." value="" autocomplete="off" />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="driver-dest">To <span class="required">*</span></label>
+                  <div class="input-group">
+                    <span class="input-icon">🏁</span>
+                    <input class="form-input" type="text" id="driver-dest" placeholder="Type a location..." value="" autocomplete="off" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="driver-date">Date <span class="required">*</span></label>
+                  <input class="form-input" type="date" id="driver-date" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="driver-time">Departure Time <span class="required">*</span></label>
+                  <input class="form-input" type="time" id="driver-time" value="09:00" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Available Seats <span class="required">*</span></label>
+                <div class="seat-picker" id="seat-picker">
+                  <button class="seat-btn" id="seat-dec" aria-label="Decrease seats">−</button>
+                  <span class="seat-icon">💺</span>
+                  <span class="seat-value" id="seat-count">3</span>
+                  <button class="seat-btn" id="seat-inc" aria-label="Increase seats">+</button>
+                  <span class="text-muted text-sm">seats available</span>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="price-per-seat">Price per Seat (₹) <span class="required">*</span></label>
+                  <input class="form-input" type="number" id="price-per-seat" value="120" min="10" />
+                  <span class="form-hint">Platform earns 12% commission (₹14.40)</span>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="max-detour">Max Detour (km)</label>
+                  <input class="form-input" type="number" id="max-detour" value="2" min="0" />
+                  <span class="form-hint">How far off-route for pickups</span>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="ride-notes">Notes for Riders</label>
+                <textarea class="form-textarea" id="ride-notes" rows="2" placeholder="e.g. AC available, no smoking, female riders preferred…"></textarea>
+              </div>
+
+              <!-- Recurrence Toggle -->
+              <div class="toggle-group">
+                <div>
+                  <div class="form-label">Recurring Ride</div>
+                  <div class="form-hint">Repeat this ride on the same schedule</div>
+                </div>
+                <label class="toggle-switch" id="recurrence-toggle">
+                  <input type="checkbox" id="recurrence-check" />
+                  <div class="toggle-track">
+                    <div class="toggle-thumb"></div>
+                  </div>
+                </label>
+              </div>
+
+              <!-- Recurrence options (shown when toggled) -->
+              <div id="recurrence-options" style="display:none;">
+                <div class="form-group">
+                  <label class="form-label">Repeat on</label>
+                  <div class="flex gap-2" id="weekday-picker">
+                    <button class="btn btn-outline-primary btn-sm active-day" data-day="Mon" id="day-Mon">Mon</button>
+                    <button class="btn btn-secondary btn-sm" data-day="Tue" id="day-Tue">Tue</button>
+                    <button class="btn btn-outline-primary btn-sm active-day" data-day="Wed" id="day-Wed">Wed</button>
+                    <button class="btn btn-secondary btn-sm" data-day="Thu" id="day-Thu">Thu</button>
+                    <button class="btn btn-outline-primary btn-sm active-day" data-day="Fri" id="day-Fri">Fri</button>
+                    <button class="btn btn-secondary btn-sm" data-day="Sat" id="day-Sat">Sat</button>
+                    <button class="btn btn-secondary btn-sm" data-day="Sun" id="day-Sun">Sun</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- FUTURE: Route waypoints, vehicle selection, gender preference filter -->
+
+              <div class="flex gap-3">
+                <button class="btn btn-primary" id="post-ride-btn" style="flex:1;">🚗 Post Ride</button>
+                <button class="btn btn-secondary" id="preview-route-btn">🗺 Preview Route</button>
+              </div>
+
+            </div>
+          </div><!-- /Post Ride Form -->
+
+          <!-- Right sidebar for post-ride tab -->
+          <div class="flex flex-col gap-6">
+
+            <!-- Vehicle Info -->
+            <div class="card">
+              <div class="card-header">
+                <h4>My Vehicle</h4>
+                <button class="btn btn-ghost btn-sm" data-stub="edit-vehicle">Edit</button>
+              </div>
+              <div class="card-body">
+                <div style="font-size:32px;text-align:center;margin-bottom:12px;">🚗</div>
+                <div class="flex flex-col gap-2">
+                  <div class="earnings-row">
+                    <span>Make / Model</span><span style="font-weight:600;">Maruti Swift Dzire</span>
+                  </div>
+                  <div class="earnings-row">
+                    <span>Year</span><span>2022</span>
+                  </div>
+                  <div class="earnings-row">
+                    <span>Registration</span><span style="font-weight:600;">MH 02 AB 4521</span>
+                  </div>
+                  <div class="earnings-row">
+                    <span>Color</span><span>White</span>
+                  </div>
+                  <div class="earnings-row">
+                    <span>Total Capacity</span><span>4 seats</span>
+                  </div>
+                  <!-- FUTURE: Insurance status, PUC, AC/non-AC tag -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Fare Preview -->
+            <div class="card">
+              <div class="card-header">
+                <h4>Fare Preview</h4>
+              </div>
+              <div class="card-body">
+                <div class="earnings-row"><span>Price per seat</span><span id="fp-price">₹120</span></div>
+                <div class="earnings-row"><span id="fp-seats-label">× Seats (3)</span><span id="fp-gross">₹360</span></div>
+                <div class="earnings-row"><span>Platform commission (12%)</span><span class="deduction" id="fp-comm">−₹43.20</span></div>
+                <div class="earnings-row total"><span>You receive</span><span class="credit" id="driver-payout">₹316.80</span></div>
+              </div>
+            </div>
+
+          </div><!-- /Right sidebar -->
+        </div><!-- /layout-two-col -->
+      </div><!-- /tab-post-ride -->
+
+
+      <!-- ─── TAB: REQUESTS ─── -->
+      <div id="tab-requests" class="tab-panel">
+        <div class="section-header">
+          <h4>Incoming Ride Requests</h4>
+          <span class="badge badge-primary" id="requests-count-badge">0 pending</span>
+        </div>
+        <div id="requests-container" class="flex flex-col gap-4">
+          <div class="empty-state" id="no-requests-state">
+            <div class="empty-icon">📥</div>
+            <h4>No Requests Yet</h4>
+            <p>Post a ride first, and rider requests will appear here automatically.</p>
+            <button class="btn btn-primary mt-4" onclick="showTab('post-ride')">Post a Ride</button>
+          </div>
+        </div>
+      </div><!-- /tab-requests -->
+
+
+      <!-- ─── TAB: ACTIVE RIDE ─── -->
+      <div id="tab-active-ride" class="tab-panel">
+        <div id="active-ride-content">
+          <div class="empty-state">
+            <div class="empty-icon">🚦</div>
+            <h4>No Active Ride</h4>
+            <p>Accept passengers from the Requests tab to start a ride.</p>
+            <button class="btn btn-primary mt-4" onclick="showTab('requests')">View Requests</button>
+          </div>
+        </div>
+      </div><!-- /tab-active-ride -->
+
+
+      <!-- ─── TAB: EARNINGS ─── -->
+      <div id="tab-earnings" class="tab-panel">
+        <div class="layout-two-col">
+          <div class="card">
+            <div class="card-header">
+              <h4>Earnings Breakdown — October 2026</h4>
+              <button class="btn btn-ghost btn-sm" data-stub="download-statement">Export ↓</button>
+            </div>
+            <div class="table-wrapper">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Route</th>
+                    <th>Pax</th>
+                    <th>Gross</th>
+                    <th>Commission</th>
+                    <th>Net</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>28 Sep</td><td>Andheri → BKC</td><td>3</td>
+                    <td>₹360</td><td class="text-danger">₹43.20</td><td class="text-success">₹316.80</td>
+                  </tr>
+                  <tr>
+                    <td>27 Sep</td><td>Andheri → BKC</td><td>2</td>
+                    <td>₹240</td><td class="text-danger">₹28.80</td><td class="text-success">₹211.20</td>
+                  </tr>
+                  <tr>
+                    <td>26 Sep</td><td>Andheri → Powai</td><td>1</td>
+                    <td>₹120</td><td class="text-danger">₹14.40</td><td class="text-success">₹105.60</td>
+                  </tr>
+                  <tr>
+                    <td>25 Sep</td><td>Andheri → BKC</td><td>3</td>
+                    <td>₹360</td><td class="text-danger">₹43.20</td><td class="text-success">₹316.80</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="flex flex-col gap-4">
+            <div class="card">
+              <div class="card-header"><h4>Monthly Summary</h4></div>
+              <div class="card-body">
+                <div class="earnings-row"><span>Total gross</span><span>₹5,480</span></div>
+                <div class="earnings-row"><span>Platform commission</span><span class="deduction">−₹657.60</span></div>
+                <div class="earnings-row"><span>Rides given</span><span>23</span></div>
+                <div class="earnings-row total"><span>Net earnings</span><span class="credit">₹4,822.40</span></div>
+              </div>
+              <div class="card-footer">
+                <button class="btn btn-primary w-full" data-stub="request-payout" id="payout-btn">💳 Request Payout</button>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header"><h4>Membership Tier</h4></div>
+              <div class="card-body">
+                <div class="flex items-center gap-3 mb-4">
+                  <span style="font-size:32px;">🥈</span>
+                  <div>
+                    <div style="font-weight:700;">Silver Verified</div>
+                    <div style="font-size:12px;color:var(--color-muted);">Commission: 12% · Priority matching</div>
+                  </div>
+                </div>
+                <div class="earnings-row"><span>Rides to Gold</span><span style="font-weight:600;">27 more</span></div>
+                <div class="match-score-bar mt-2"><div class="fill medium" style="width:46%"></div></div>
+                <div style="font-size:12px;color:var(--color-muted);margin-top:6px;">Gold tier: 10% commission + featured listing</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /tab-earnings -->
+
+
+      <!-- ─── TAB: SCHEDULE ─── -->
+      <div id="tab-schedule" class="tab-panel">
+        <div class="card">
+          <div class="card-header">
+            <h4>My Ride Schedule</h4>
+            <button class="btn btn-primary btn-sm" onclick="showTab('post-ride')">+ Post Ride</button>
+          </div>
+          <div class="card-body">
+            <!-- FUTURE: Full calendar widget (weekly/monthly view) -->
+            <div class="empty-state">
+              <div class="empty-icon">🗓️</div>
+              <h4>Calendar Coming Soon</h4>
+              <p>Your recurring and one-off rides will appear here in a weekly calendar view.</p>
+              <button class="btn btn-primary mt-4" onclick="showTab('post-ride')" id="schedule-post-btn">Post Your First Ride</button>
+            </div>
+          </div>
+        </div>
+      </div><!-- /tab-schedule -->
+
+
+      <!-- ─── TAB: VERIFICATION ─── -->
+      <div id="tab-verification" class="tab-panel">
+        <div class="layout-two-col">
+          <div class="card">
+            <div class="card-header">
+              <h4>Driver Verification</h4>
+              <span class="badge badge-warning">2 Pending</span>
+            </div>
+            <div class="card-body">
+              <div class="alert alert-warning mb-4">
+                <span class="alert-icon">⚠️</span>
+                <span>Complete verification to unlock full trust score and priority matching.</span>
+              </div>
+
+              <div class="verify-item">
+                <div>
+                  <div class="verify-label">Government ID</div>
+                  <div class="verify-sub">Aadhaar / Passport / Voter ID</div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="badge badge-success">✓ Verified</span>
+                </div>
+              </div>
+              <div class="verify-item">
+                <div>
+                  <div class="verify-label">Driver's Licence</div>
+                  <div class="verify-sub">Valid DL required to post rides</div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="badge badge-success">✓ Verified</span>
+                </div>
+              </div>
+              <div class="verify-item">
+                <div>
+                  <div class="verify-label">Vehicle Registration (RC)</div>
+                  <div class="verify-sub">Uploaded but under review</div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="badge badge-warning">Under Review</span>
+                  <button class="btn btn-ghost btn-sm" data-stub="reupload">Re-upload</button>
+                </div>
+              </div>
+              <div class="verify-item">
+                <div>
+                  <div class="verify-label">Insurance Certificate</div>
+                  <div class="verify-sub">Comprehensive insurance required</div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="badge badge-danger">Missing</span>
+                  <button class="btn btn-primary btn-sm" id="upload-insurance" data-stub="upload-doc">Upload</button>
+                </div>
+              </div>
+              <div class="verify-item">
+                <div>
+                  <div class="verify-label">PUC Certificate</div>
+                  <div class="verify-sub">Valid pollution check required</div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="badge badge-danger">Missing</span>
+                  <button class="btn btn-primary btn-sm" id="upload-puc" data-stub="upload-doc">Upload</button>
+                </div>
+              </div>
+              <div class="verify-item">
+                <div>
+                  <div class="verify-label">Phone Verification</div>
+                  <div class="verify-sub">OTP-verified mobile number</div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="badge badge-success">✓ Verified</span>
+                </div>
+              </div>
+              <!-- FUTURE: Background check, emergency contact, face verification -->
+            </div>
+          </div>
+          <div class="flex flex-col gap-4">
+            <div class="card">
+              <div class="card-header"><h4>Trust Score</h4></div>
+              <div class="card-body" style="text-align:center;">
+                <div class="trust-score-ring" style="margin:0 auto;">
+                  <svg width="120" height="120">
+                    <circle cx="60" cy="60" r="50" fill="none" stroke="var(--color-border)" stroke-width="10"/>
+                    <circle cx="60" cy="60" r="50" fill="none" stroke="var(--color-primary)"
+                      stroke-width="10" stroke-dasharray="314" stroke-dashoffset="63" stroke-linecap="round"/>
+                  </svg>
+                  <div class="score-label">
+                    <span class="score-number">94</span>
+                    <span class="score-text">Trust</span>
+                  </div>
+                </div>
+                <div style="margin-top:16px;font-size:13px;color:var(--color-muted);">Complete all verifications to reach 100</div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header"><h4>Verified Member Benefits</h4></div>
+              <div class="card-body flex flex-col gap-2">
+                <div class="flex gap-2 items-center"><span class="badge badge-success">✓</span><span style="font-size:13px;">Priority AI matching</span></div>
+                <div class="flex gap-2 items-center"><span class="badge badge-success">✓</span><span style="font-size:13px;">Trust badge on profile</span></div>
+                <div class="flex gap-2 items-center"><span class="badge badge-neutral">—</span><span style="font-size:13px;color:var(--color-muted);">Reduced 10% commission (Gold)</span></div>
+                <div class="flex gap-2 items-center"><span class="badge badge-neutral">—</span><span style="font-size:13px;color:var(--color-muted);">Featured in search results</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /tab-verification -->
+
+    </div><!-- /page-body -->
+  </main>
+
+</div><!-- /app-shell -->
+
+<!-- Post Success Overlay -->
+<div class="post-success-overlay" id="post-success-overlay">
+  <div class="post-success-modal">
+    <div class="success-check">✓</div>
+    <h3 style="margin-bottom:8px;">Ride Posted!</h3>
+    <p style="color:var(--color-muted);font-size:14px;margin-bottom:20px;">Your ride is now visible to riders. AI matching is running — requests will appear shortly.</p>
+    <div style="display:flex;flex-direction:column;gap:8px;padding:16px;background:var(--color-surface-2);border-radius:var(--radius-lg);margin-bottom:20px;text-align:left;font-size:13px;">
+      <div class="flex justify-between"><span style="color:var(--color-muted);">Route</span><span style="font-weight:600;" id="success-route">—</span></div>
+      <div class="flex justify-between"><span style="color:var(--color-muted);">Date</span><span style="font-weight:600;" id="success-date">—</span></div>
+      <div class="flex justify-between"><span style="color:var(--color-muted);">Departure</span><span style="font-weight:600;" id="success-time">—</span></div>
+      <div class="flex justify-between"><span style="color:var(--color-muted);">Seats</span><span style="font-weight:600;" id="success-seats">—</span></div>
+      <div class="flex justify-between"><span style="color:var(--color-muted);">Price / seat</span><span style="font-weight:600;" id="success-price">—</span></div>
+    </div>
+    <div class="flex gap-3">
+      <button class="btn btn-primary" style="flex:1;" id="success-view-requests" onclick="closePostSuccess(); showTab('requests');">📥 View Requests</button>
+      <button class="btn btn-secondary" onclick="closePostSuccess()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/app.js"></script>
+<script src="js/rides.js"></script>
+<script>
+  // ══════════════════════════════════════════════════════════════
+  // AUTOCOMPLETE — Nominatim geocoding (same as map.html)
+  // ══════════════════════════════════════════════════════════════
+  let _acDebounce = null;
+  const driverCoords = { origin: null, dest: null };
+
+  function setupAutocomplete(inputId, coordKey) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    const dropdown = document.createElement('div');
+    dropdown.className = 'autocomplete-dropdown';
+    dropdown.style.display = 'none';
+    input.parentElement.style.position = 'relative';
+    input.parentElement.appendChild(dropdown);
+
+    input.addEventListener('input', () => {
+      clearTimeout(_acDebounce);
+      const query = input.value.trim();
+      if (query.length < 3) { dropdown.style.display = 'none'; return; }
+
+      _acDebounce = setTimeout(async () => {
+        try {
+          const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&countrycodes=in&addressdetails=1`;
+          const resp = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+          const results = await resp.json();
+
+          if (!results.length) {
+            dropdown.innerHTML = '<div class="autocomplete-item no-results">No results found</div>';
+            dropdown.style.display = 'block';
+            return;
+          }
+
+          dropdown.innerHTML = '';
+          results.forEach(r => {
+            const item = document.createElement('div');
+            item.className = 'autocomplete-item';
+            const parts = r.display_name.split(',');
+            const primary = parts.slice(0, 2).join(',').trim();
+            const secondary = parts.slice(2, 4).join(',').trim();
+            item.innerHTML = `
+              <div class="autocomplete-primary">📍 ${primary}</div>
+              <div class="autocomplete-secondary">${secondary}</div>
+            `;
+            item.addEventListener('click', () => {
+              input.value = primary;
+              dropdown.style.display = 'none';
+              driverCoords[coordKey] = [parseFloat(r.lat), parseFloat(r.lon)];
+            });
+            dropdown.appendChild(item);
+          });
+          dropdown.style.display = 'block';
+        } catch (err) {
+          dropdown.innerHTML = '<div class="autocomplete-item no-results">Search unavailable</div>';
+          dropdown.style.display = 'block';
+        }
+      }, 350);
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!input.contains(e.target) && !dropdown.contains(e.target)) dropdown.style.display = 'none';
+    });
+    input.addEventListener('keydown', (e) => { if (e.key === 'Escape') dropdown.style.display = 'none'; });
+  }
+
+  setupAutocomplete('driver-origin', 'origin');
+  setupAutocomplete('driver-dest', 'dest');
+
+
+  // ══════════════════════════════════════════════════════════════
+  // TAB NAVIGATION
+  // ══════════════════════════════════════════════════════════════
+  const tabList = ['post-ride','requests','active-ride','earnings','schedule','verification'];
+  const navIds = {
+    'post-ride': 'nav-post-ride', 'requests': 'nav-requests',
+    'active-ride': 'nav-active-ride', 'earnings': 'nav-earnings',
+    'schedule': 'nav-schedule', 'verification': 'nav-verification'
+  };
+  const tabTitles = {
+    'post-ride': ['Post a Ride', 'Create a new ride offer for your commute'],
+    'requests': ['Incoming Requests', 'Review and respond to rider requests'],
+    'active-ride': ['Active Ride', 'Manage your current trip'],
+    'earnings': ['Earnings', 'Track your income and payouts'],
+    'schedule': ['My Schedule', 'View your upcoming rides'],
+    'verification': ['Driver Verification', 'Complete your safety checks']
+  };
+
+  function showTab(tab) {
+    tabList.forEach(t => {
+      document.getElementById('tab-' + t)?.classList.remove('active');
+      document.getElementById(navIds[t])?.classList.remove('active');
+    });
+    document.getElementById('tab-' + tab)?.classList.add('active');
+    document.getElementById(navIds[tab])?.classList.add('active');
+    const [title, sub] = tabTitles[tab] || ['Driver', ''];
+    document.getElementById('driver-page-title').textContent = title;
+    document.getElementById('driver-page-subtitle').textContent = sub;
+  }
+
+
+  // ══════════════════════════════════════════════════════════════
+  // SEAT PICKER & FARE PREVIEW
+  // ══════════════════════════════════════════════════════════════
+  let seats = 3;
+  document.getElementById('seat-dec').addEventListener('click', () => {
+    if (seats > 1) { seats--; updateSeatUI(); }
+  });
+  document.getElementById('seat-inc').addEventListener('click', () => {
+    if (seats < 6) { seats++; updateSeatUI(); }
+  });
+  function updateSeatUI() {
+    document.getElementById('seat-count').textContent = seats;
+    updateFarePreview();
+  }
+
+  // Dynamic fare preview
+  const priceInput = document.getElementById('price-per-seat');
+  priceInput.addEventListener('input', updateFarePreview);
+  function updateFarePreview() {
+    const price = parseFloat(priceInput.value) || 0;
+    const gross = price * seats;
+    const comm = gross * 0.12;
+    const net = gross - comm;
+    document.getElementById('fp-price').textContent = `₹${price}`;
+    document.getElementById('fp-seats-label').textContent = `× Seats (${seats})`;
+    document.getElementById('fp-gross').textContent = `₹${gross}`;
+    document.getElementById('fp-comm').textContent = `−₹${comm.toFixed(2)}`;
+    document.getElementById('driver-payout').textContent = `₹${net.toFixed(2)}`;
+  }
+
+  // Recurrence toggle
+  document.getElementById('recurrence-check').addEventListener('change', function() {
+    document.getElementById('recurrence-options').style.display = this.checked ? 'block' : 'none';
+  });
+  document.querySelectorAll('#weekday-picker button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.classList.toggle('btn-outline-primary');
+      btn.classList.toggle('btn-secondary');
+    });
+  });
+
+  // Set tomorrow's date
+  document.getElementById('driver-date').valueAsDate = new Date(Date.now() + 86400000);
+
+
+  // ══════════════════════════════════════════════════════════════
+  // DEMO DATA — Simulated rider requests
+  // ══════════════════════════════════════════════════════════════
+  const DEMO_RIDERS = [
+    {
+      id: 1, name: 'Priya Menon', avatar: '👩', trust: 91, rating: 4.9, rides: 14,
+      pickup: 'Versova, Andheri W', dropoff: 'BKC Gate 3',
+      time: '9:00 AM', overlap: '8.2 km (82%)', matchPct: 96, budget: 120,
+      pickupCoords: [19.1313, 72.8258], dropoffCoords: [19.0650, 72.8650],
+    },
+    {
+      id: 2, name: 'Arjun Kumar', avatar: '👨', trust: 87, rating: 4.6, rides: 18,
+      pickup: 'Andheri West Stn', dropoff: 'MMRDA Ground, BKC',
+      time: '9:15 AM', overlap: '6.1 km (61%)', matchPct: 74, budget: 100,
+      pickupCoords: [19.1200, 72.8320], dropoffCoords: [19.0680, 72.8700],
+    },
+    {
+      id: 3, name: 'Sneha Patil', avatar: '👩', trust: 93, rating: 4.8, rides: 22,
+      pickup: 'DN Nagar Metro', dropoff: 'BKC Kurla',
+      time: '9:05 AM', overlap: '7.5 km (75%)', matchPct: 88, budget: 130,
+      pickupCoords: [19.1380, 72.8300], dropoffCoords: [19.0720, 72.8620],
+    },
+  ];
+
+  let acceptedRiders = [];
+  let driverState = 'IDLE'; // IDLE | POSTED | PICKUP | IN_PROGRESS | COMPLETED
+  let postedRideData = null;
+  let driverMapInstance = null;
+  let driverMapLayers = [];
+  let liveInterval = null;
+
+
+  // ══════════════════════════════════════════════════════════════
+  // POST RIDE — Success overlay + simulate incoming requests
+  // ══════════════════════════════════════════════════════════════
+  function closePostSuccess() {
+    document.getElementById('post-success-overlay').classList.remove('open');
+  }
+
+  document.getElementById('post-ride-btn').addEventListener('click', () => {
+    const origin = document.getElementById('driver-origin').value.trim();
+    const dest = document.getElementById('driver-dest').value.trim();
+    const date = document.getElementById('driver-date').value;
+    const time = document.getElementById('driver-time').value;
+    const price = parseFloat(document.getElementById('price-per-seat').value) || 0;
+
+    if (!origin || !dest || !date || !time || !price) {
+      if (window.RidePoolApp) window.RidePoolApp.showToast('Please fill in all required fields.', 'warning');
+      return;
+    }
+
+    postedRideData = { origin, dest, date, time, seats, price };
+    driverState = 'POSTED';
+
+    // Show success overlay
+    document.getElementById('success-route').textContent = `${origin} → ${dest}`;
+    document.getElementById('success-date').textContent = date;
+    document.getElementById('success-time').textContent = time;
+    document.getElementById('success-seats').textContent = `${seats} seats`;
+    document.getElementById('success-price').textContent = `₹${price}`;
+    document.getElementById('post-success-overlay').classList.add('open');
+
+    // Update button
+    const btn = document.getElementById('post-ride-btn');
+    btn.textContent = '✓ Ride Posted!';
+    btn.classList.replace('btn-primary', 'btn-success');
+    btn.disabled = true;
+
+    // Simulate incoming requests one by one
+    simulateIncomingRequests();
+  });
+
+
+  // ══════════════════════════════════════════════════════════════
+  // SIMULATE INCOMING REQUESTS (staggered)
+  // ══════════════════════════════════════════════════════════════
+  function simulateIncomingRequests() {
+    const container = document.getElementById('requests-container');
+    const noRequestsState = document.getElementById('no-requests-state');
+
+    let requestIndex = 0;
+
+    function addNextRequest() {
+      if (requestIndex >= DEMO_RIDERS.length) return;
+
+      const rider = DEMO_RIDERS[requestIndex];
+      requestIndex++;
+
+      // Hide empty state
+      if (noRequestsState) noRequestsState.style.display = 'none';
+
+      // Update badge
+      const badge = document.getElementById('requests-badge');
+      badge.textContent = requestIndex;
+      const countBadge = document.getElementById('requests-count-badge');
+      countBadge.textContent = `${requestIndex} pending`;
+
+      // Build request card
+      const card = document.createElement('div');
+      card.className = 'request-card new-request';
+      card.id = `req-${rider.id}`;
+      const badgeClass = rider.matchPct >= 90 ? 'high' : rider.matchPct >= 70 ? 'medium' : 'low';
+      card.innerHTML = `
+        <div class="request-score">${rider.matchPct}% match</div>
+        <div class="flex items-center gap-3">
+          <div class="match-avatar" style="width:44px;height:44px;border-radius:50%;background:var(--color-surface-2);display:flex;align-items:center;justify-content:center;font-size:20px;border:2px solid var(--color-border);">${rider.avatar}</div>
+          <div style="flex:1;">
+            <div style="font-weight:600;">${rider.name}</div>
+            <div style="font-size:13px;color:var(--color-muted);">Trust ${rider.trust} · ⭐ ${rider.rating} · ${rider.rides} rides</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-weight:700;">₹${rider.budget}</div>
+            <div style="font-size:12px;color:var(--color-muted);">budget</div>
+          </div>
+        </div>
+        <hr class="divider" />
+        <div class="flex gap-6" style="font-size:13px;">
+          <div>
+            <div style="color:var(--color-muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em;">PICKUP</div>
+            <div style="font-weight:500;">${rider.pickup}</div>
+          </div>
+          <div>
+            <div style="color:var(--color-muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em;">DROPOFF</div>
+            <div style="font-weight:500;">${rider.dropoff}</div>
+          </div>
+          <div>
+            <div style="color:var(--color-muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em;">TIME</div>
+            <div style="font-weight:500;">Tomorrow · ${rider.time}</div>
+          </div>
+          <div>
+            <div style="color:var(--color-muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em;">OVERLAP</div>
+            <div style="font-weight:500;">${rider.overlap}</div>
+          </div>
+        </div>
+        <div class="match-score-bar mt-3">
+          <div class="fill ${badgeClass}" style="width:${rider.matchPct}%"></div>
+        </div>
+        <div class="flex gap-2 mt-3">
+          <button class="btn btn-success" onclick="acceptRequest(${rider.id})">✓ Accept</button>
+          <button class="btn btn-secondary" onclick="viewRiderRoute(${rider.id})">View Route</button>
+          <button class="btn btn-danger" style="margin-left:auto;" onclick="declineRequest(${rider.id})">✕ Decline</button>
+        </div>
+      `;
+
+      container.prepend(card);
+
+      if (window.RidePoolApp) {
+        window.RidePoolApp.showToast(`New request from ${rider.name} (${rider.matchPct}% match)`, 'info');
+      }
+
+      // Queue next request
+      setTimeout(addNextRequest, 3000 + Math.random() * 2000);
+    }
+
+    // First request after 2 seconds
+    setTimeout(addNextRequest, 2000);
+  }
+
+
+  // ══════════════════════════════════════════════════════════════
+  // ACCEPT / DECLINE REQUESTS
+  // ══════════════════════════════════════════════════════════════
+  function acceptRequest(riderId) {
+    const rider = DEMO_RIDERS.find(r => r.id === riderId);
+    if (!rider) return;
+
+    acceptedRiders.push(rider);
+
+    // Update request card
+    const card = document.getElementById('req-' + riderId);
+    if (card) {
+      const score = card.querySelector('.request-score');
+      if (score) {
+        score.textContent = '✓ Accepted';
+        score.style.background = 'var(--color-success-light)';
+        score.style.color = 'var(--color-success)';
+      }
+      // Replace buttons with accepted state
+      const btns = card.querySelector('.flex.gap-2.mt-3');
+      if (btns) {
+        btns.innerHTML = `
+          <span class="badge badge-success" style="font-size:13px;padding:6px 12px;">✓ Accepted — ${rider.name} has been notified</span>
+        `;
+      }
+      card.style.borderColor = 'var(--color-success)';
+    }
+
+    // Update badge
+    updateRequestBadge();
+
+    if (window.RidePoolApp) window.RidePoolApp.showToast(`Accepted ${rider.name}!`, 'success');
+
+    // If we have accepted at least 1 rider, show the start ride button
+    if (acceptedRiders.length >= 1) {
+      showStartRideOption();
+    }
+  }
+
+  function declineRequest(riderId) {
+    const card = document.getElementById('req-' + riderId);
+    if (card) {
+      card.style.transition = 'opacity 0.3s, transform 0.3s';
+      card.style.opacity = '0';
+      card.style.transform = 'translateX(20px)';
+      setTimeout(() => card.remove(), 300);
+    }
+    updateRequestBadge();
+    if (window.RidePoolApp) window.RidePoolApp.showToast('Request declined', 'info');
+  }
+
+  function viewRiderRoute(riderId) {
+    if (window.RidePoolApp) window.RidePoolApp.showToast('Route preview coming soon!', 'info');
+  }
+
+  function updateRequestBadge() {
+    const remaining = document.querySelectorAll('.request-card:not([style*="opacity: 0"])').length - acceptedRiders.length;
+    const badge = document.getElementById('requests-badge');
+    badge.textContent = Math.max(0, remaining);
+    const countBadge = document.getElementById('requests-count-badge');
+    if (countBadge) countBadge.textContent = `${acceptedRiders.length} accepted · ${Math.max(0, remaining)} pending`;
+  }
+
+
+  // ══════════════════════════════════════════════════════════════
+  // START RIDE OPTION — shown after accepting passengers
+  // ══════════════════════════════════════════════════════════════
+  function showStartRideOption() {
+    // Add a start-ride banner at the top of requests tab if not already there
+    if (document.getElementById('start-ride-banner')) return;
+
+    const banner = document.createElement('div');
+    banner.id = 'start-ride-banner';
+    banner.className = 'alert alert-info';
+    banner.style.cssText = 'margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;';
+    banner.innerHTML = `
+      <div class="flex items-center gap-2">
+        <span class="alert-icon">🚗</span>
+        <span><strong>${acceptedRiders.length} passenger${acceptedRiders.length > 1 ? 's' : ''} accepted.</strong> Ready to start your ride?</span>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="beginPickupPhase()">🚀 Start Ride</button>
+    `;
+
+    const container = document.getElementById('requests-container');
+    container.parentElement.insertBefore(banner, container);
+  }
+
+
+  // ══════════════════════════════════════════════════════════════
+  // PICKUP PHASE — Driver picks up each passenger
+  // ══════════════════════════════════════════════════════════════
+  function beginPickupPhase() {
+    driverState = 'PICKUP';
+    showTab('active-ride');
+
+    const origin = postedRideData?.origin || 'Andheri West';
+    const dest = postedRideData?.dest || 'BKC, Mumbai';
+
+    const content = document.getElementById('active-ride-content');
+    content.innerHTML = `
+      <div class="layout-two-col">
+        <div class="flex flex-col gap-4">
+          <!-- Live Stats -->
+          <div class="driver-live-stats">
+            <div class="driver-live-stat">
+              <div class="dlv" id="d-eta">15 min</div>
+              <div class="dll">ETA</div>
+            </div>
+            <div class="driver-live-stat">
+              <div class="dlv" id="d-distance">10.2 km</div>
+              <div class="dll">Distance</div>
+            </div>
+            <div class="driver-live-stat">
+              <div class="dlv" id="d-pax">${acceptedRiders.length}</div>
+              <div class="dll">Passengers</div>
+            </div>
+            <div class="driver-live-stat">
+              <div class="dlv" id="d-earning">₹${acceptedRiders.length * (postedRideData?.price || 120)}</div>
+              <div class="dll">Earning</div>
+            </div>
+          </div>
+
+          <!-- Map -->
+          <div class="card">
+            <div class="card-header">
+              <h4>Route Map</h4>
+              <span class="badge badge-success badge-dot">Live</span>
+            </div>
+            <div class="card-body">
+              <div id="driver-map"></div>
+            </div>
+          </div>
+
+          <!-- Trip Progress -->
+          <div class="card">
+            <div class="card-header">
+              <h4>Trip Progress</h4>
+              <span class="badge badge-primary" id="d-progress-badge">Picking up</span>
+            </div>
+            <div class="card-body">
+              <div class="trip-progress-bar">
+                <div class="trip-progress-fill" id="d-progress-fill" style="width:5%;"></div>
+              </div>
+              <div class="pickup-steps" id="pickup-steps">
+                <div class="pickup-step active-step" id="step-start">
+                  <div class="step-dot">📍</div>
+                  <div class="step-content">
+                    <div class="step-title">Start: ${origin}</div>
+                    <div class="step-meta">Departing now</div>
+                  </div>
+                </div>
+                ${acceptedRiders.map((r, i) => `
+                  <div class="pickup-step" id="step-pickup-${r.id}">
+                    <div class="step-dot">${r.avatar}</div>
+                    <div class="step-content">
+                      <div class="step-title">Pick up ${r.name}</div>
+                      <div class="step-meta">${r.pickup} · ${r.time}</div>
+                    </div>
+                  </div>
+                `).join('')}
+                <div class="pickup-step" id="step-dest">
+                  <div class="step-dot">🏁</div>
+                  <div class="step-content">
+                    <div class="step-title">Destination: ${dest}</div>
+                    <div class="step-meta">Drop-off all passengers</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right column -->
+        <div class="flex flex-col gap-4">
+          <!-- Passengers -->
+          <div class="card">
+            <div class="card-header">
+              <h4>Passengers</h4>
+              <span class="badge badge-primary">${acceptedRiders.length} on this ride</span>
+            </div>
+            <div class="card-body flex flex-col gap-3" id="pax-list">
+              ${acceptedRiders.map(r => `
+                <div class="passenger-item" id="pax-item-${r.id}">
+                  <div class="pax-avatar">${r.avatar}</div>
+                  <div class="pax-info">
+                    <div class="pax-name">${r.name}</div>
+                    <div class="pax-sub">📍 ${r.pickup} → 🏁 ${r.dropoff}</div>
+                  </div>
+                  <span class="badge badge-warning" id="pax-status-${r.id}">Waiting</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Trip Earnings -->
+          <div class="card">
+            <div class="card-header"><h4>Trip Earnings</h4></div>
+            <div class="card-body">
+              <div class="earnings-row">
+                <span>Fare per seat</span><span>₹${postedRideData?.price || 120}</span>
+              </div>
+              <div class="earnings-row">
+                <span>× Passengers (${acceptedRiders.length})</span><span>₹${acceptedRiders.length * (postedRideData?.price || 120)}</span>
+              </div>
+              <div class="earnings-row">
+                <span>Commission (12%)</span><span class="deduction">−₹${(acceptedRiders.length * (postedRideData?.price || 120) * 0.12).toFixed(2)}</span>
+              </div>
+              <div class="earnings-row total">
+                <span>Your net</span><span class="credit">₹${(acceptedRiders.length * (postedRideData?.price || 120) * 0.88).toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="card">
+            <div class="card-body flex flex-col gap-2">
+              <button class="btn btn-primary w-full" id="simulate-pickups-btn" onclick="simulatePickupSequence()">🚗 Simulate Pickups (Demo)</button>
+              <button class="btn btn-danger btn-sm w-full" onclick="cancelDriverRide()">Cancel Ride</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Init map
+    setTimeout(initDriverMap, 100);
+  }
+
+
+  // ══════════════════════════════════════════════════════════════
+  // DRIVER MAP — Leaflet map for active ride
+  // ══════════════════════════════════════════════════════════════
+  async function initDriverMap() {
+    if (driverMapInstance) { driverMapInstance.remove(); }
+    driverMapLayers = [];
+
+    driverMapInstance = L.map('driver-map', {
+      center: [19.1100, 72.8650],
+      zoom: 13,
+      zoomControl: false,
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap',
+      maxZoom: 19,
+    }).addTo(driverMapInstance);
+
+    // Draw driver route (using OSRM)
+    const driverFrom = driverCoords.origin || [19.1200, 72.8320];
+    const driverTo = driverCoords.dest || [19.0650, 72.8650];
+
+    try {
+      const url = `https://router.project-osrm.org/route/v1/driving/${driverFrom[1]},${driverFrom[0]};${driverTo[1]},${driverTo[0]}?overview=full&geometries=geojson`;
+      const resp = await fetch(url);
+      const data = await resp.json();
+
+      if (data.code === 'Ok' && data.routes[0]) {
+        const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+        const line = L.polyline(coords, { color: '#2563eb', weight: 5, opacity: 0.8 }).addTo(driverMapInstance);
+        driverMapLayers.push(line);
+
+        // Store route for animation
+        window._driverRouteCoords = coords;
+        window._driverRouteDuration = data.routes[0].duration;
+        window._driverRouteDistance = data.routes[0].distance;
+
+        // Update stats
+        const etaEl = document.getElementById('d-eta');
+        if (etaEl) etaEl.textContent = Math.round(data.routes[0].duration / 60) + ' min';
+        const distEl = document.getElementById('d-distance');
+        if (distEl) distEl.textContent = (data.routes[0].distance / 1000).toFixed(1) + ' km';
+      }
+    } catch (e) {
+      console.warn('OSRM routing failed:', e);
+    }
+
+    // Place markers
+    function makeIcon(emoji, color) {
+      return L.divIcon({
+        html: `<div style="background:${color};color:#fff;width:28px;height:28px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.25);font-size:12px;"><span style="transform:rotate(45deg)">${emoji}</span></div>`,
+        className: '', iconSize: [28, 28], iconAnchor: [14, 28], popupAnchor: [0, -30],
+      });
+    }
+
+    L.marker(driverFrom, { icon: makeIcon('📍', '#16a34a') }).addTo(driverMapInstance).bindPopup('Start');
+    L.marker(driverTo, { icon: makeIcon('🏁', '#d97706') }).addTo(driverMapInstance).bindPopup('Destination');
+
+    // Place passenger pickup markers
+    acceptedRiders.forEach(r => {
+      L.marker(r.pickupCoords, { icon: makeIcon(r.avatar, '#6366f1') }).addTo(driverMapInstance).bindPopup(`Pick up: ${r.name}`);
+    });
+
+    // Fit bounds
+    const allPts = [driverFrom, driverTo, ...acceptedRiders.map(r => r.pickupCoords)];
+    driverMapInstance.fitBounds(L.latLngBounds(allPts), { padding: [30, 30] });
+  }
+
+
+  // ══════════════════════════════════════════════════════════════
+  // SIMULATE PICKUP SEQUENCE
+  // ══════════════════════════════════════════════════════════════
+  function simulatePickupSequence() {
+    const btn = document.getElementById('simulate-pickups-btn');
+    if (btn) { btn.disabled = true; btn.textContent = '🚗 Simulating...'; }
+
+    // Step 1: Mark start as done
+    document.getElementById('step-start')?.classList.replace('active-step', 'done');
+
+    let pickupIdx = 0;
+
+    function pickupNext() {
+      if (pickupIdx >= acceptedRiders.length) {
+        // All picked up — start the ride
+        setTimeout(startEnRoutePhase, 1500);
+        return;
+      }
+
+      const rider = acceptedRiders[pickupIdx];
+      pickupIdx++;
+
+      // Mark step as active
+      const stepEl = document.getElementById(`step-pickup-${rider.id}`);
+      if (stepEl) stepEl.classList.add('active-step');
+
+      // Update passenger status
+      const statusEl = document.getElementById(`pax-status-${rider.id}`);
+      if (statusEl) { statusEl.textContent = 'Arriving...'; statusEl.className = 'badge badge-warning'; }
+
+      if (window.RidePoolApp) window.RidePoolApp.showToast(`Heading to pick up ${rider.name}...`, 'info');
+
+      // Simulate arrival + pickup after delay
+      setTimeout(() => {
+        if (stepEl) {
+          stepEl.classList.remove('active-step');
+          stepEl.classList.add('done');
+        }
+        if (statusEl) { statusEl.textContent = '✓ On board'; statusEl.className = 'badge badge-success'; }
+
+        if (window.RidePoolApp) window.RidePoolApp.showToast(`${rider.name} picked up! ✓`, 'success');
+
+        // Update progress
+        const progress = Math.round(((pickupIdx + 1) / (acceptedRiders.length + 2)) * 100);
+        const fill = document.getElementById('d-progress-fill');
+        if (fill) fill.style.width = `${progress}%`;
+
+        // Next pickup
+        setTimeout(pickupNext, 2000);
+      }, 2500);
+    }
+
+    setTimeout(pickupNext, 1000);
+  }
+
+
+  // ══════════════════════════════════════════════════════════════
+  // EN ROUTE PHASE — All passengers on board, driving to destination
+  // ══════════════════════════════════════════════════════════════
+  function startEnRoutePhase() {
+    driverState = 'IN_PROGRESS';
+
+    // Mark destination step as active
+    const destStep = document.getElementById('step-dest');
+    if (destStep) destStep.classList.add('active-step');
+
+    const progressBadge = document.getElementById('d-progress-badge');
+    if (progressBadge) { progressBadge.textContent = 'En route'; progressBadge.className = 'badge badge-primary'; }
+
+    const btn = document.getElementById('simulate-pickups-btn');
+    if (btn) {
+      btn.textContent = '🏁 Complete Trip';
+      btn.disabled = false;
+      btn.onclick = () => completeDriverTrip();
+      btn.className = 'btn btn-success w-full';
+    }
+
+    if (window.RidePoolApp) window.RidePoolApp.showToast('All passengers on board! Heading to destination.', 'success');
+
+    // Simulate progress
+    let progress = 60;
+    liveInterval = setInterval(() => {
+      progress = Math.min(95, progress + 2);
+      const fill = document.getElementById('d-progress-fill');
+      if (fill) fill.style.width = `${progress}%`;
+
+      const etaEl = document.getElementById('d-eta');
+      const remaining = Math.max(1, Math.round(15 * (1 - progress / 100)));
+      if (etaEl) etaEl.textContent = `${remaining} min`;
+
+      const distEl = document.getElementById('d-distance');
+      const distRemain = Math.max(0.1, (10.2 * (1 - progress / 100))).toFixed(1);
+      if (distEl) distEl.textContent = `${distRemain} km`;
+    }, 1500);
+  }
+
+
+  // ══════════════════════════════════════════════════════════════
+  // COMPLETE TRIP — Summary + rating
+  // ══════════════════════════════════════════════════════════════
+  function completeDriverTrip() {
+    driverState = 'COMPLETED';
+    if (liveInterval) clearInterval(liveInterval);
+
+    const totalEarning = acceptedRiders.length * (postedRideData?.price || 120);
+    const netEarning = (totalEarning * 0.88).toFixed(2);
+
+    const content = document.getElementById('active-ride-content');
+    content.innerHTML = `
+      <div class="layout-two-col" style="max-width:900px;">
+        <div class="card">
+          <div class="card-body trip-summary-card">
+            <div class="summary-icon">🎉</div>
+            <h3 style="margin-bottom:4px;">Trip Complete!</h3>
+            <p style="color:var(--color-muted);font-size:14px;margin-bottom:24px;">All passengers have been dropped off safely.</p>
+
+            <div style="text-align:left;padding:16px;background:var(--color-surface-2);border-radius:var(--radius-lg);margin-bottom:20px;">
+              <div class="earnings-row"><span>Route</span><span style="font-weight:600;">${postedRideData?.origin || 'Andheri'} → ${postedRideData?.dest || 'BKC'}</span></div>
+              <div class="earnings-row"><span>Passengers</span><span>${acceptedRiders.length}</span></div>
+              <div class="earnings-row"><span>Distance</span><span>${window._driverRouteDistance ? (window._driverRouteDistance / 1000).toFixed(1) + ' km' : '10.2 km'}</span></div>
+              <div class="earnings-row"><span>Duration</span><span>${window._driverRouteDuration ? Math.round(window._driverRouteDuration / 60) + ' min' : '~15 min'}</span></div>
+              <div class="earnings-row"><span>Gross fare</span><span>₹${totalEarning}</span></div>
+              <div class="earnings-row"><span>Platform commission (12%)</span><span class="deduction">−₹${(totalEarning * 0.12).toFixed(2)}</span></div>
+              <div class="earnings-row total"><span>Net earnings</span><span class="credit">₹${netEarning}</span></div>
+            </div>
+
+            <div style="font-size:13px;font-weight:600;margin-bottom:12px;color:var(--color-text-secondary);">Rate your passengers</div>
+            <div class="flex flex-col gap-3" style="margin-bottom:20px;">
+              ${acceptedRiders.map(r => `
+                <div class="passenger-item">
+                  <div class="pax-avatar">${r.avatar}</div>
+                  <div class="pax-info">
+                    <div class="pax-name">${r.name}</div>
+                  </div>
+                  <div class="star-rating" id="rating-${r.id}">
+                    <span class="star active" data-v="1" onclick="ratePassenger(${r.id}, 1)">★</span>
+                    <span class="star active" data-v="2" onclick="ratePassenger(${r.id}, 2)">★</span>
+                    <span class="star active" data-v="3" onclick="ratePassenger(${r.id}, 3)">★</span>
+                    <span class="star active" data-v="4" onclick="ratePassenger(${r.id}, 4)">★</span>
+                    <span class="star active" data-v="5" onclick="ratePassenger(${r.id}, 5)">★</span>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+
+            <div class="flex gap-3">
+              <button class="btn btn-primary" style="flex:1;" onclick="submitDriverRatings()">Submit Ratings</button>
+              <button class="btn btn-ghost" onclick="resetDriver()">← Back to Dashboard</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-4">
+          <div class="card">
+            <div class="card-header"><h4>Earnings Added</h4></div>
+            <div class="card-body" style="text-align:center;">
+              <div style="font-size:36px;font-weight:800;color:var(--color-success);margin-bottom:4px;">₹${netEarning}</div>
+              <div style="font-size:13px;color:var(--color-muted);">Added to your monthly earnings</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h4>Updated Stats</h4></div>
+            <div class="card-body">
+              <div class="earnings-row"><span>Total rides</span><span style="font-weight:600;">24</span></div>
+              <div class="earnings-row"><span>This month earnings</span><span class="credit">₹${(4820 + parseFloat(netEarning)).toFixed(2)}</span></div>
+              <div class="earnings-row"><span>Rating</span><span>⭐ 4.8</span></div>
+              <div class="earnings-row"><span>CO₂ saved</span><span style="color:var(--color-success);">+2.1 kg</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+
+  function ratePassenger(riderId, value) {
+    const container = document.getElementById(`rating-${riderId}`);
+    if (!container) return;
+    container.querySelectorAll('.star').forEach(s => {
+      s.classList.toggle('active', parseInt(s.dataset.v) <= value);
+    });
+  }
+
+  function submitDriverRatings() {
+    if (window.RidePoolApp) window.RidePoolApp.showToast('Ratings submitted! Thanks for driving.', 'success');
+    setTimeout(() => resetDriver(), 1500);
+  }
+
+  function cancelDriverRide() {
+    if (liveInterval) clearInterval(liveInterval);
+    if (window.RidePoolApp) window.RidePoolApp.showToast('Ride cancelled', 'warning');
+    resetDriver();
+  }
+
+  function resetDriver() {
+    driverState = 'IDLE';
+    acceptedRiders = [];
+    postedRideData = null;
+    if (liveInterval) clearInterval(liveInterval);
+    if (driverMapInstance) { driverMapInstance.remove(); driverMapInstance = null; }
+
+    // Reset post button
+    const btn = document.getElementById('post-ride-btn');
+    if (btn) {
+      btn.textContent = '🚗 Post Ride';
+      btn.className = 'btn btn-primary';
+      btn.disabled = false;
+      btn.style.flex = '1';
+    }
+
+    // Reset requests
+    document.getElementById('requests-badge').textContent = '0';
+    const container = document.getElementById('requests-container');
+    container.innerHTML = `
+      <div class="empty-state" id="no-requests-state">
+        <div class="empty-icon">📥</div>
+        <h4>No Requests Yet</h4>
+        <p>Post a ride first, and rider requests will appear here automatically.</p>
+        <button class="btn btn-primary mt-4" onclick="showTab('post-ride')">Post a Ride</button>
+      </div>
+    `;
+
+    // Reset active ride
+    document.getElementById('active-ride-content').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🚦</div>
+        <h4>No Active Ride</h4>
+        <p>Accept passengers from the Requests tab to start a ride.</p>
+        <button class="btn btn-primary mt-4" onclick="showTab('requests')">View Requests</button>
+      </div>
+    `;
+
+    // Remove banner if exists
+    document.getElementById('start-ride-banner')?.remove();
+
+    showTab('post-ride');
+  }
+</script>
+</body>
+</html>

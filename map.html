@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Route Map & Match — RidePool</title>
+  <meta name="description" content="Find and match rides on your route using the live interactive map." />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    /* Map-specific overrides */
+    body { overflow: hidden; }
+    .leaflet-container { font-family: var(--font-family); }
+    .leaflet-popup-content-wrapper {
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--color-border);
+      box-shadow: var(--shadow-md);
+    }
+    .leaflet-popup-content { margin: 12px 14px; font-size: 13px; }
+    .map-pill {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-full);
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: var(--shadow-sm);
+      color: var(--color-text-secondary);
+      transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+    }
+    .map-pill:hover { background: var(--color-primary-light); color: var(--color-primary); border-color: var(--color-primary); }
+    .map-pill.active { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+    .legend-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    /* ── Autocomplete Dropdown ── */
+    .autocomplete-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-top: none;
+      border-radius: 0 0 var(--radius-md) var(--radius-md);
+      box-shadow: var(--shadow-md);
+      max-height: 220px;
+      overflow-y: auto;
+    }
+    .autocomplete-item {
+      padding: 10px 12px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--color-border);
+      transition: background 0.15s;
+    }
+    .autocomplete-item:last-child { border-bottom: none; }
+    .autocomplete-item:hover { background: var(--color-primary-light); }
+    .autocomplete-item.no-results {
+      color: var(--color-muted);
+      cursor: default;
+      font-size: 13px;
+      text-align: center;
+    }
+    .autocomplete-item.no-results:hover { background: transparent; }
+    .autocomplete-primary {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--color-text);
+    }
+    .autocomplete-secondary {
+      font-size: 11px;
+      color: var(--color-muted);
+      margin-top: 1px;
+    }
+
+    /* ── Ride State Cards ── */
+    .ride-state-card {
+      padding: 0;
+    }
+    .ride-state-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .ride-state-header.live {
+      background: var(--color-primary-light);
+    }
+    .ride-state-header.completed {
+      background: var(--color-success-light);
+    }
+    .ride-state-icon {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .ride-state-icon.pending {
+      background: var(--color-warning-light);
+    }
+    .ride-state-icon.accepted {
+      background: var(--color-success-light);
+      color: var(--color-success);
+      font-weight: 700;
+    }
+    .ride-state-icon.live-icon {
+      background: var(--color-primary);
+      color: #fff;
+      animation: pulse-icon 1.5s ease-in-out infinite;
+    }
+    .ride-state-icon.completed-icon {
+      background: var(--color-success-light);
+    }
+    @keyframes pulse-icon {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(1); opacity: 0.4; }
+      100% { transform: scale(2); opacity: 0; }
+    }
+    .ride-state-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--color-text);
+    }
+    .ride-state-subtitle {
+      font-size: 12px;
+      color: var(--color-muted);
+      margin-top: 1px;
+    }
+    .ride-state-driver {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .ride-state-driver.compact {
+      padding: 10px 16px;
+    }
+
+    /* Info grid (vehicle, plate, time, fare) */
+    .ride-state-info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--color-border);
+      border-bottom: 1px solid var(--color-border);
+    }
+    .info-block {
+      background: var(--color-surface);
+      padding: 12px 14px;
+      text-align: center;
+    }
+    .info-block .info-icon { font-size: 18px; margin-bottom: 2px; }
+    .info-block .info-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--color-muted);
+      font-weight: 600;
+    }
+    .info-block .info-value {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-text);
+      margin-top: 2px;
+    }
+
+    .ride-state-route {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .ride-state-details {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 12px;
+    }
+    .detail-item {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+    }
+    .detail-label { color: var(--color-muted); }
+    .detail-value { font-weight: 600; color: var(--color-text); }
+
+    .ride-state-timer {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .timer-bar {
+      height: 4px;
+      background: var(--color-border);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+    }
+    .timer-fill {
+      height: 100%;
+      background: var(--color-warning);
+      width: 0%;
+      border-radius: var(--radius-full);
+    }
+
+    .ride-state-contact {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .ride-state-actions {
+      padding: 12px 16px;
+    }
+
+    /* Live stats */
+    .ride-live-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1px;
+      background: var(--color-border);
+      border-bottom: 1px solid var(--color-border);
+    }
+    .live-stat {
+      background: var(--color-surface);
+      padding: 12px 8px;
+      text-align: center;
+    }
+    .live-stat-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--color-text);
+    }
+    .live-stat-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    /* Progress bar */
+    .ride-state-progress {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .progress-track {
+      height: 6px;
+      background: var(--color-border);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--color-primary);
+      border-radius: var(--radius-full);
+      transition: width 0.8s ease;
+    }
+
+    /* Live updates timeline */
+    .ride-update {
+      display: flex;
+      gap: 8px;
+      padding: 6px 0;
+      font-size: 12px;
+      border-bottom: 1px solid var(--color-border);
+      animation: fadeInUp 0.3s ease;
+    }
+    .ride-update:last-child { border-bottom: none; }
+    .update-time {
+      flex-shrink: 0;
+      color: var(--color-muted);
+      font-weight: 600;
+      min-width: 60px;
+    }
+    .update-text {
+      color: var(--color-text-secondary);
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Ride summary */
+    .ride-summary {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      font-size: 13px;
+      color: var(--color-text-secondary);
+      border-bottom: 1px solid var(--color-border);
+    }
+    .summary-row:last-child { border-bottom: none; }
+    .summary-row.total {
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--color-text);
+      border-top: 2px solid var(--color-border-dark);
+      margin-top: 4px;
+      padding-top: 10px;
+    }
+    .summary-row.savings {
+      background: var(--color-success-light);
+      margin: 4px -16px -14px;
+      padding: 10px 16px;
+      border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+      border-bottom: none;
+      font-weight: 600;
+    }
+
+    /* Star rating */
+    .ride-rating {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--color-border);
+      text-align: center;
+    }
+    .star-rating {
+      display: flex;
+      gap: 4px;
+      justify-content: center;
+    }
+    .star-rating .star {
+      font-size: 28px;
+      cursor: pointer;
+      color: var(--color-border-dark);
+      transition: color 0.15s, transform 0.15s;
+    }
+    .star-rating .star:hover,
+    .star-rating .star.hover {
+      color: var(--color-warning);
+      transform: scale(1.15);
+    }
+    .star-rating .star.active {
+      color: var(--color-warning);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Topnav -->
+  <nav class="topnav" id="map-nav">
+    <div class="topnav-inner">
+      <a href="index.html" class="nav-logo">
+        <div class="logo-icon">🚗</div>
+        RidePool
+      </a>
+      <div class="nav-links">
+        <a href="dashboard.html">Rider Dashboard</a>
+        <a href="driver.html">Driver Dashboard</a>
+      </div>
+      <div class="nav-actions">
+        <a href="profile.html" class="btn btn-ghost btn-sm">👤 Arjun</a>
+        <button class="btn btn-primary btn-sm" id="topbar-post-ride-btn" onclick="window.location='driver.html'">+ Post Ride</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Map Shell -->
+  <div class="map-shell">
+
+    <!-- ── Left Sidebar: Filters & Route Input ── -->
+    <aside class="map-sidebar-left" id="map-left-panel">
+
+      <div class="map-sidebar-section">
+        <div class="map-sidebar-title">Your Route</div>
+        <div class="flex flex-col gap-3">
+          <div class="form-group">
+            <label class="form-label">From</label>
+            <div class="input-group">
+              <span class="input-icon">📍</span>
+              <input class="form-input" type="text" id="map-origin" placeholder="Type a location..." value="" autocomplete="off" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">To</label>
+            <div class="input-group">
+              <span class="input-icon">🏁</span>
+              <input class="form-input" type="text" id="map-dest" placeholder="Type a location..." value="" autocomplete="off" />
+            </div>
+          </div>
+          <button class="btn btn-primary w-full" id="search-route-btn">🔍 Search Matches</button>
+        </div>
+      </div>
+
+      <div class="map-sidebar-section">
+        <div class="map-sidebar-title">Filters</div>
+        <div class="flex flex-col gap-3">
+
+          <div class="form-group">
+            <label class="form-label">Date</label>
+            <input class="form-input" type="date" id="filter-date" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Depart Between</label>
+            <div class="form-row">
+              <input class="form-input" type="time" id="filter-time-from" value="08:30" />
+              <input class="form-input" type="time" id="filter-time-to"   value="09:30" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Seats Needed</label>
+            <select class="form-select" id="filter-seats">
+              <option value="1">1 seat</option>
+              <option value="2">2 seats</option>
+              <option value="3">3 seats</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Max Price per Seat (₹)</label>
+            <input class="form-input" type="number" id="filter-budget" value="150" min="0" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Min Trust Score</label>
+            <select class="form-select" id="filter-trust">
+              <option value="0">Any</option>
+              <option value="70">70+</option>
+              <option value="80" selected>80+</option>
+              <option value="90">90+ (Verified)</option>
+            </select>
+          </div>
+
+          <div class="toggle-group">
+            <span class="form-label" style="margin:0;">Verified only</span>
+            <label class="toggle-switch" id="verified-toggle">
+              <input type="checkbox" id="filter-verified" />
+              <div class="toggle-track"><div class="toggle-thumb"></div></div>
+            </label>
+          </div>
+
+          <!-- FUTURE: Gender preference, AC/non-AC, recurring only, rating filter -->
+
+          <button class="btn btn-secondary w-full" id="apply-filters-btn">Apply Filters</button>
+        </div>
+      </div>
+
+      <!-- Map Legend -->
+      <div class="map-sidebar-section">
+        <div class="map-sidebar-title">Legend</div>
+        <div class="flex flex-col gap-2" style="font-size:12px;">
+          <div class="flex items-center gap-2">
+            <span class="legend-dot" style="background:#2563eb;"></span>
+            Driver route
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="legend-dot" style="background:#16a34a;"></span>
+            Your route
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="legend-dot" style="background:#6366f1;"></span>
+            Pickup marker
+          </div>
+        </div>
+      </div>
+
+    </aside><!-- /map-sidebar-left -->
+
+    <!-- ── Map ── -->
+    <div class="map-container">
+      <!-- Mode pills overlay -->
+      <div class="map-overlay-controls" id="map-mode-controls">
+        <button class="map-pill active" id="mode-matches" onclick="setMode('matches')">Matches</button>
+        <button class="map-pill" id="mode-heatmap" onclick="setMode('heatmap')">Demand Heatmap</button>
+        <button class="map-pill" id="mode-all" onclick="setMode('all')">All Routes</button>
+      </div>
+      <div id="map"></div>
+    </div>
+
+    <!-- ── Right Sidebar: Match Results ── -->
+    <aside class="map-sidebar-right" id="map-right-panel">
+
+      <div class="map-sidebar-section" style="position:sticky;top:0;background:var(--color-surface);z-index:10;">
+        <div class="flex items-center justify-between">
+          <div class="map-sidebar-title" style="margin:0;">Match Results</div>
+          <span class="badge badge-primary" id="match-count-badge">Loading...</span>
+        </div>
+        <div class="flex gap-2 mt-2" id="sort-controls">
+          <button class="btn btn-secondary btn-sm" id="sort-score" onclick="sortMatches('score')">↓ Score</button>
+          <button class="btn btn-ghost btn-sm" id="sort-price" onclick="sortMatches('price')">₹ Price</button>
+          <button class="btn btn-ghost btn-sm" id="sort-time" onclick="sortMatches('time')">⏰ Time</button>
+        </div>
+      </div>
+
+      <div id="match-results-list" style="padding: var(--space-3);">
+        <!-- Match cards are dynamically rendered by map.js -->
+        <div class="empty-state" style="padding: 40px 20px;">
+          <div class="empty-icon">🔍</div>
+          <h4>Searching for matches...</h4>
+          <p>Drawing routes from available drivers</p>
+        </div>
+      </div>
+    </aside><!-- /map-sidebar-right -->
+
+  </div><!-- /map-shell -->
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/map.js"></script>
+  <script>
+    // Set default date filter
+    document.getElementById('filter-date').valueAsDate = new Date(Date.now() + 86400000);
+
+    let currentMode = 'matches';
+    function setMode(mode) {
+      currentMode = mode;
+      document.querySelectorAll('.map-pill').forEach(p => p.classList.remove('active'));
+      document.getElementById('mode-' + mode).classList.add('active');
+      // FUTURE: switch map layer based on mode (heatmap, cluster, etc.)
+    }
+
+    function sortMatches(by) {
+      // FUTURE: re-sort and re-render match cards
+      document.querySelectorAll('#sort-controls button').forEach(b => {
+        if (b.id && b.id.startsWith('sort-')) {
+          b.className = 'btn btn-ghost btn-sm';
+        }
+      });
+      document.getElementById('sort-' + by).className = 'btn btn-secondary btn-sm';
+    }
+  </script>
+</body>
+</html>

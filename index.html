@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RidePool — Community P2P Ride-Sharing</title>
+  <meta name="description" content="AI-powered community ride-sharing. Match your commute route, split costs, and travel safely with verified peers." />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+</head>
+<body>
+
+  <!-- ── Navigation ── -->
+  <nav class="topnav" id="main-nav">
+    <div class="topnav-inner">
+      <a href="index.html" class="nav-logo">
+        <div class="logo-icon">🚗</div>
+        RidePool
+      </a>
+
+      <div class="nav-links">
+        <a href="map.html">Find a Ride</a>
+        <a href="driver.html">Offer a Ride</a>
+        <a href="#how-it-works">How It Works</a>
+        <a href="#trust">Safety</a>
+        <a href="#business">For Drivers</a>
+      </div>
+
+      <div class="nav-actions">
+        <a href="dashboard.html" class="btn btn-ghost btn-sm">Log In</a>
+        <a href="dashboard.html" class="btn btn-primary btn-sm">Sign Up Free</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── Hero ── -->
+  <section class="landing-hero">
+    <div class="hero-eyebrow">🤖 AI-Powered Matching</div>
+    <h1>Share your commute.<br />Split the cost.</h1>
+    <p>AI matches you with nearby commuters on overlapping routes — verified, safe, and on your schedule.</p>
+
+    <div class="hero-cta-group">
+      <a href="map.html" class="btn btn-primary btn-lg" id="hero-find-ride">
+        🔍 Find a Ride
+      </a>
+      <a href="driver.html" class="btn btn-secondary btn-lg" id="hero-offer-ride">
+        🚗 Offer a Ride
+      </a>
+    </div>
+
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-num">12,400+</div>
+        <div class="hero-stat-label">Active Commuters</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">₹850</div>
+        <div class="hero-stat-label">Avg Monthly Savings</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">98.4%</div>
+        <div class="hero-stat-label">Safety Rating</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">2.3T CO₂</div>
+        <div class="hero-stat-label">Emissions Saved</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── How It Works ── -->
+  <section class="landing-section" id="how-it-works" style="background: var(--color-bg);">
+    <div class="container">
+      <h2 class="section-title">How RidePool works</h2>
+      <p class="section-sub">Three steps to your first shared commute.</p>
+
+      <div class="steps-row">
+        <div class="step">
+          <div class="step-icon">📍</div>
+          <div class="step-number">1</div>
+          <div>
+            <h4>Post Your Route</h4>
+            <p>Set your origin, destination, and schedule. Add your budget and seat preferences.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-icon">🤖</div>
+          <div class="step-number">2</div>
+          <div>
+            <h4>AI Finds Matches</h4>
+            <p>Our engine scores nearby commuters on route overlap, timing, budget, and trust score.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-icon">🤝</div>
+          <div class="step-number">3</div>
+          <div>
+            <h4>Ride &amp; Save</h4>
+            <p>Accept a match, meet at the pickup point, and split the cost automatically.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── AI Matching Features ── -->
+  <section class="landing-section" id="features" style="background: var(--color-surface); border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border);">
+    <div class="container">
+      <h2 class="section-title">Intelligent matching, 5 dimensions</h2>
+      <p class="section-sub">Our AI scores every potential match across 5 factors for the best possible ride.</p>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🗺️</div>
+          <h4>Route Overlap</h4>
+          <p>Polyline-based route comparison ensures drivers and riders share meaningful path overlap, not just proximity.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⏰</div>
+          <h4>Timing Alignment</h4>
+          <p>Matches riders within a configurable time window — no waiting 45 minutes for a ₹20 saving.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">💺</div>
+          <h4>Seating Capacity</h4>
+          <p>Drivers set available seats; the system pools compatible riders for fuller, more economical trips.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">💰</div>
+          <h4>Budget Matching</h4>
+          <p>Riders set max fare; drivers set min price. The AI finds the Pareto-optimal price range for both.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🛡️</div>
+          <h4>Safety Verification</h4>
+          <p>Trust Score combines ID verification, ride history, ratings, and emergency contact status.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🔄</div>
+          <h4>Recurring Commutes</h4>
+          <p>Set a weekly schedule once and get auto-matched every day — zero rebooking overhead.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Trust & Safety ── -->
+  <section class="landing-section" id="trust" style="background: var(--color-bg);">
+    <div class="container">
+      <h2 class="section-title">Built for safety, verified by community</h2>
+      <p class="section-sub">Every member on RidePool goes through a multi-layer trust pipeline.</p>
+
+      <div class="trust-grid">
+        <div class="trust-item">
+          <div class="trust-icon">🪪</div>
+          <h5>ID Verification</h5>
+          <p>Government ID verified before first ride.</p>
+        </div>
+        <div class="trust-item">
+          <div class="trust-icon">⭐</div>
+          <h5>Community Ratings</h5>
+          <p>Mutual post-ride ratings keep everyone accountable.</p>
+        </div>
+        <div class="trust-item">
+          <div class="trust-icon">🚨</div>
+          <h5>Emergency SOS</h5>
+          <p>One-tap SOS alert to contacts and platform.</p>
+        </div>
+        <div class="trust-item">
+          <div class="trust-icon">📍</div>
+          <h5>Live Tracking</h5>
+          <p>Share live trip location with a trusted contact.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Business / Driver Callout ── -->
+  <section class="landing-section" id="business" style="background: var(--color-surface); border-top: 1px solid var(--color-border);">
+    <div class="container">
+      <div class="biz-callout">
+        <div class="biz-text">
+          <h2>Earn from your daily commute</h2>
+          <p>Become a verified RidePool driver. Offset your fuel costs or build a steady side income — platform takes only a transparent 12% commission.</p>
+          <div class="biz-pills">
+            <span class="badge badge-success badge-dot">Transparent 12% commission</span>
+            <span class="badge badge-primary badge-dot">Verified Trust Badge</span>
+            <span class="badge badge-neutral badge-dot">Weekly payouts</span>
+            <span class="badge badge-warning badge-dot">Recurring ride scheduling</span>
+          </div>
+        </div>
+        <div style="flex-shrink: 0;">
+          <a href="driver.html" class="btn btn-primary btn-lg" id="become-driver-cta">
+            🚗 Become a Driver
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Footer ── -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-col">
+          <a href="index.html" class="nav-logo" style="margin-bottom: 12px; font-size: 15px;">
+            <div class="logo-icon">🚗</div>
+            RidePool
+          </a>
+          <p style="font-size: 13px; color: var(--color-muted); line-height: 1.7;">
+            AI-powered community ride-sharing. Match smarter, commute cheaper, travel safer.
+          </p>
+        </div>
+        <div class="footer-col">
+          <h6>Product</h6>
+          <a href="map.html">Find a Ride</a>
+          <a href="driver.html">Offer a Ride</a>
+          <a href="dashboard.html">Dashboard</a>
+          <a href="#" data-stub="pricing">Pricing</a>
+        </div>
+        <div class="footer-col">
+          <h6>Trust &amp; Safety</h6>
+          <a href="#" data-stub="safety">Safety Center</a>
+          <a href="#" data-stub="community-guidelines">Community Guidelines</a>
+          <a href="#" data-stub="insurance">Insurance</a>
+          <a href="#" data-stub="sos">Emergency SOS</a>
+        </div>
+        <div class="footer-col">
+          <h6>Company</h6>
+          <a href="#" data-stub="about">About</a>
+          <a href="#" data-stub="blog">Blog</a>
+          <a href="#" data-stub="careers">Careers</a>
+          <a href="#" data-stub="contact">Contact</a>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <span>© 2026 RidePool Technologies Pvt. Ltd.</span>
+        <div class="flex gap-4">
+          <a href="#" data-stub="privacy">Privacy Policy</a>
+          <a href="#" data-stub="terms">Terms of Service</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

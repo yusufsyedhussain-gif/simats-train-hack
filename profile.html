@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profile — RidePool</title>
+  <meta name="description" content="Your RidePool profile, trust score, verification status and ride history." />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <a href="index.html" class="nav-logo">
+        <div class="logo-icon">🚗</div>
+        RidePool
+      </a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Navigation</div>
+      <a href="dashboard.html" class="nav-item"><span class="nav-icon">🏠</span> Rider Home</a>
+      <a href="driver.html"    class="nav-item"><span class="nav-icon">🚗</span> Driver Home</a>
+      <a href="map.html"       class="nav-item"><span class="nav-icon">🗺️</span> Route Map</a>
+      <a href="profile.html"   class="nav-item active"><span class="nav-icon">👤</span> My Profile</a>
+    </div>
+    <div class="sidebar-section" style="flex:1;">
+      <div class="sidebar-label">Account</div>
+      <a href="#" class="nav-item" data-stub="settings"><span class="nav-icon">⚙️</span> Settings</a>
+      <a href="#" class="nav-item" data-stub="support"><span class="nav-icon">💬</span> Help</a>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-avatar">AK</div>
+      <div class="user-info">
+        <div class="user-name">Arjun Kumar</div>
+        <div class="user-role">Rider &amp; Driver</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main Content ── -->
+  <main class="main-content">
+    <div class="page-topbar">
+      <div>
+        <div class="page-title">My Profile</div>
+        <div class="page-subtitle">Manage your identity, trust score and ride history</div>
+      </div>
+      <div class="page-topbar-actions">
+        <button class="btn btn-secondary btn-sm" id="edit-profile-btn" data-stub="edit-profile">✏️ Edit Profile</button>
+        <button class="btn btn-primary btn-sm" id="share-profile-btn" data-stub="share-profile">↗ Share Profile</button>
+      </div>
+    </div>
+
+    <div class="page-body">
+
+      <!-- Profile Header Card -->
+      <div class="profile-header mb-6">
+        <div class="profile-avatar-wrap">
+          <div class="profile-avatar">AK</div>
+          <div class="profile-online-dot"></div>
+        </div>
+
+        <div style="flex:1;">
+          <div class="flex items-center gap-3 flex-wrap">
+            <h2>Arjun Kumar</h2>
+            <span class="badge badge-primary">🛡️ Verified Member</span>
+            <span class="badge badge-success badge-dot">Active</span>
+          </div>
+          <div class="profile-subtitle">Mumbai, Maharashtra · Member since Jan 2025</div>
+
+          <div class="profile-badges">
+            <span class="badge badge-neutral">🪪 ID Verified</span>
+            <span class="badge badge-neutral">📱 Phone Verified</span>
+            <span class="badge badge-neutral">⭐ 4.7 Rating</span>
+            <span class="badge badge-warning">⚠️ DL Pending</span>
+            <!-- FUTURE: Background check badge, premium membership, referral count -->
+          </div>
+
+          <div class="profile-stats">
+            <div class="profile-stat">
+              <div class="p-stat-val">18</div>
+              <div class="p-stat-label">Rides as Rider</div>
+            </div>
+            <div class="profile-stat">
+              <div class="p-stat-val">23</div>
+              <div class="p-stat-label">Rides as Driver</div>
+            </div>
+            <div class="profile-stat">
+              <div class="p-stat-val">₹1,240</div>
+              <div class="p-stat-label">Saved This Month</div>
+            </div>
+            <div class="profile-stat">
+              <div class="p-stat-val">34 kg</div>
+              <div class="p-stat-label">CO₂ Saved</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Trust Score Ring -->
+        <div class="flex flex-col items-center gap-2">
+          <div class="trust-score-ring">
+            <svg width="120" height="120" aria-label="Trust score 87 out of 100">
+              <circle cx="60" cy="60" r="50" fill="none" stroke="var(--color-border)" stroke-width="10"/>
+              <circle cx="60" cy="60" r="50" fill="none" stroke="var(--color-primary)"
+                stroke-width="10"
+                stroke-dasharray="314"
+                stroke-dashoffset="41"
+                stroke-linecap="round"/>
+            </svg>
+            <div class="score-label">
+              <span class="score-number">87</span>
+              <span class="score-text">/ 100</span>
+            </div>
+          </div>
+          <div style="font-size:12px;color:var(--color-muted);text-align:center;">Trust Score</div>
+          <a href="driver.html" class="btn btn-outline-primary btn-sm" onclick="if(window.location.pathname.includes('profile')) { window.location='driver.html'; }">
+            Improve Score →
+          </a>
+        </div>
+      </div>
+
+      <!-- Main Layout -->
+      <div class="layout-two-col">
+
+        <!-- Left: Tabs panel -->
+        <div class="card">
+          <div class="card-header" style="padding-bottom:0;border-bottom:none;">
+            <div class="tabs" id="profile-tabs" style="width:100%;">
+              <button class="tab-btn active" id="ptab-history" onclick="showProfileTab('history')">🚗 Ride History</button>
+              <button class="tab-btn" id="ptab-reviews" onclick="showProfileTab('reviews')">⭐ Reviews</button>
+              <button class="tab-btn" id="ptab-verification" onclick="showProfileTab('verification')">🛡️ Verification</button>
+              <!-- FUTURE: Achievements, emissions impact, referrals -->
+            </div>
+          </div>
+
+          <!-- Ride History Tab -->
+          <div id="ptp-history" class="tab-panel active">
+            <div class="table-wrapper">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Role</th>
+                    <th>Route</th>
+                    <th>With</th>
+                    <th>Fare</th>
+                    <th>Rating</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>28 Sep</td>
+                    <td><span class="badge badge-neutral">Rider</span></td>
+                    <td>Andheri → BKC</td>
+                    <td><div class="user-cell"><div class="mini-avatar">RS</div>Rohit S.</div></td>
+                    <td>₹120</td>
+                    <td class="stars">★★★★★</td>
+                    <td><span class="badge badge-success">Done</span></td>
+                  </tr>
+                  <tr>
+                    <td>27 Sep</td>
+                    <td><span class="badge badge-primary">Driver</span></td>
+                    <td>Andheri → BKC</td>
+                    <td><div class="user-cell"><div class="mini-avatar">PM</div>Priya M.</div></td>
+                    <td>₹316</td>
+                    <td class="stars">★★★★★</td>
+                    <td><span class="badge badge-success">Done</span></td>
+                  </tr>
+                  <tr>
+                    <td>26 Sep</td>
+                    <td><span class="badge badge-neutral">Rider</span></td>
+                    <td>Andheri → Powai</td>
+                    <td><div class="user-cell"><div class="mini-avatar">DK</div>Dev K.</div></td>
+                    <td>₹90</td>
+                    <td class="stars">★★★★☆</td>
+                    <td><span class="badge badge-success">Done</span></td>
+                  </tr>
+                  <tr>
+                    <td>25 Sep</td>
+                    <td><span class="badge badge-primary">Driver</span></td>
+                    <td>Andheri → BKC</td>
+                    <td><div class="user-cell"><div class="mini-avatar">NS</div>Nidhi S., +2</div></td>
+                    <td>₹317</td>
+                    <td class="stars">★★★★☆</td>
+                    <td><span class="badge badge-success">Done</span></td>
+                  </tr>
+                  <tr>
+                    <td>24 Sep</td>
+                    <td><span class="badge badge-neutral">Rider</span></td>
+                    <td>Andheri → BKC</td>
+                    <td><div class="user-cell"><div class="mini-avatar">VR</div>Vikram R.</div></td>
+                    <td>₹110</td>
+                    <td class="stars">—</td>
+                    <td><span class="badge badge-danger">Cancelled</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="card-footer">
+              <button class="btn btn-ghost btn-sm" data-stub="load-more-trips">Load more →</button>
+            </div>
+          </div>
+
+          <!-- Reviews Tab -->
+          <div id="ptp-reviews" class="tab-panel">
+            <div class="card-body">
+              <div class="review-item">
+                <div class="review-header">
+                  <div class="mini-avatar">RS</div>
+                  <div>
+                    <div class="review-name">Rohit Sharma</div>
+                    <div class="stars">★★★★★</div>
+                  </div>
+                  <div class="review-date">28 Sep 2026</div>
+                </div>
+                <p class="review-text">Arjun was on time and very polite. Would definitely ride with him again!</p>
+              </div>
+              <div class="review-item">
+                <div class="review-header">
+                  <div class="mini-avatar">PM</div>
+                  <div>
+                    <div class="review-name">Priya Menon</div>
+                    <div class="stars">★★★★★</div>
+                  </div>
+                  <div class="review-date">27 Sep 2026</div>
+                </div>
+                <p class="review-text">Great co-passenger. Quiet, respectful, no fuss. Highly recommended.</p>
+              </div>
+              <div class="review-item">
+                <div class="review-header">
+                  <div class="mini-avatar">DK</div>
+                  <div>
+                    <div class="review-name">Dev Kapoor</div>
+                    <div class="stars">★★★★☆</div>
+                  </div>
+                  <div class="review-date">26 Sep 2026</div>
+                </div>
+                <p class="review-text">Good rider. Was ready at pickup on time. Minor navigation confusion but resolved quickly.</p>
+              </div>
+              <!-- FUTURE: Paginated reviews, filter by role (as rider / as driver), reply to review -->
+            </div>
+          </div>
+
+          <!-- Verification Tab (mirrors driver.html version for combined rider/driver profile) -->
+          <div id="ptp-verification" class="tab-panel">
+            <div class="card-body">
+              <div class="alert alert-warning mb-4">
+                <span class="alert-icon">⚠️</span>
+                <span>Complete all verifications to reach a Trust Score of 100.</span>
+              </div>
+              <div class="verify-item">
+                <div>
+                  <div class="verify-label">Government ID (Aadhaar)</div>
+                  <div class="verify-sub">Verified · Ends XX-1234</div>
+                </div>
+                <span class="badge badge-success">✓ Done</span>
+              </div>
+              <div class="verify-item">
+                <div>
+                  <div class="verify-label">Phone Number</div>
+                  <div class="verify-sub">+91 98XXX XXXXX · OTP verified</div>
+                </div>
+                <span class="badge badge-success">✓ Done</span>
+              </div>
+              <div class="verify-item">
+                <div>
+                  <div class="verify-label">Email Address</div>
+                  <div class="verify-sub">ar***@gmail.com</div>
+                </div>
+                <span class="badge badge-success">✓ Done</span>
+              </div>
+              <div class="verify-item">
+                <div>
+                  <div class="verify-label">Driver's Licence</div>
+                  <div class="verify-sub">Required to post rides</div>
+                </div>
+                <div class="flex gap-2 items-center">
+                  <span class="badge badge-warning">Pending</span>
+                  <button class="btn btn-primary btn-sm" id="upload-dl" data-stub="upload-doc">Upload</button>
+                </div>
+              </div>
+              <div class="verify-item">
+                <div>
+                  <div class="verify-label">Emergency Contact</div>
+                  <div class="verify-sub">Required for SOS feature</div>
+                </div>
+                <div class="flex gap-2 items-center">
+                  <span class="badge badge-danger">Missing</span>
+                  <button class="btn btn-primary btn-sm" id="add-emergency" data-stub="add-emergency">Add</button>
+                </div>
+              </div>
+              <!-- FUTURE: Face verification, background check, referral code -->
+            </div>
+          </div>
+
+        </div><!-- /tabs card -->
+
+        <!-- Right sidebar -->
+        <div class="flex flex-col gap-6">
+
+          <!-- Trust Score Breakdown -->
+          <div class="card">
+            <div class="card-header">
+              <h4>Trust Score Breakdown</h4>
+            </div>
+            <div class="card-body flex flex-col gap-3">
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <span style="font-size:13px;">Identity Verified</span>
+                  <span style="font-size:13px;font-weight:600;">25/25</span>
+                </div>
+                <div class="match-score-bar"><div class="fill high" style="width:100%"></div></div>
+              </div>
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <span style="font-size:13px;">Ride History &amp; Ratings</span>
+                  <span style="font-size:13px;font-weight:600;">32/35</span>
+                </div>
+                <div class="match-score-bar"><div class="fill high" style="width:91%"></div></div>
+              </div>
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <span style="font-size:13px;">Driver Documents</span>
+                  <span style="font-size:13px;font-weight:600;">15/25</span>
+                </div>
+                <div class="match-score-bar"><div class="fill medium" style="width:60%"></div></div>
+              </div>
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <span style="font-size:13px;">Safety Setup</span>
+                  <span style="font-size:13px;font-weight:600;">15/15</span>
+                </div>
+                <div class="match-score-bar"><div class="fill high" style="width:100%"></div></div>
+              </div>
+              <hr class="divider" />
+              <div class="flex items-center justify-between">
+                <span style="font-weight:600;">Total Score</span>
+                <span style="font-weight:700;color:var(--color-primary);font-size:18px;">87/100</span>
+              </div>
+              <!-- FUTURE: Gamified badges, trust history chart -->
+            </div>
+          </div>
+
+          <!-- Quick Actions -->
+          <div class="card">
+            <div class="card-header"><h4>Quick Actions</h4></div>
+            <div class="card-body flex flex-col gap-2">
+              <a href="map.html"      class="btn btn-outline-primary w-full" id="qaction-find">🔍 Find a Ride</a>
+              <a href="driver.html"   class="btn btn-secondary w-full"       id="qaction-offer">🚗 Offer a Ride</a>
+              <button class="btn btn-ghost w-full" data-stub="invite-friend"  id="qaction-invite">📨 Invite a Friend</button>
+              <button class="btn btn-ghost w-full" data-stub="download-data"  id="qaction-data">⬇ Download My Data</button>
+              <!-- FUTURE: Link payment method, manage bank account, toggle public/private profile -->
+            </div>
+          </div>
+
+          <!-- Membership Tier -->
+          <div class="card">
+            <div class="card-header">
+              <h4>Membership</h4>
+            </div>
+            <div class="card-body">
+              <div class="flex items-center gap-3 mb-3">
+                <span style="font-size:28px;">🥈</span>
+                <div>
+                  <div style="font-weight:700;">Silver Member</div>
+                  <div style="font-size:12px;color:var(--color-muted);">Valid until Dec 2026</div>
+                </div>
+              </div>
+              <div class="flex flex-col gap-2" style="font-size:13px;">
+                <div class="flex gap-2 items-center"><span class="badge badge-success">✓</span> Priority AI matching</div>
+                <div class="flex gap-2 items-center"><span class="badge badge-success">✓</span> 12% platform commission</div>
+                <div class="flex gap-2 items-center"><span class="badge badge-neutral">—</span> Gold: 10% commission</div>
+              </div>
+              <button class="btn btn-outline-primary w-full mt-4" data-stub="upgrade-tier" id="upgrade-tier-btn">
+                ↑ Upgrade to Gold
+              </button>
+              <!-- FUTURE: Membership payment, renewal, benefits comparison -->
+            </div>
+          </div>
+
+        </div><!-- /right sidebar -->
+
+      </div><!-- /layout-two-col -->
+    </div><!-- /page-body -->
+  </main>
+
+</div><!-- /app-shell -->
+
+<script src="js/app.js"></script>
+<script>
+  function showProfileTab(tab) {
+    ['history','reviews','verification'].forEach(t => {
+      document.getElementById('ptp-' + t)?.classList.remove('active');
+      document.getElementById('ptab-' + t)?.classList.remove('active');
+    });
+    document.getElementById('ptp-' + tab)?.classList.add('active');
+    document.getElementById('ptab-' + tab)?.classList.add('active');
+  }
+</script>
+</body>
+</html>
